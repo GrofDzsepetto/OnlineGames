@@ -1,6 +1,5 @@
 import type { QuizQuestion } from "../../types/quiz";
 
-
 const QuizQuestionComponent = ({
   question,
   onAnswer,
@@ -10,16 +9,13 @@ const QuizQuestionComponent = ({
 }) => (
   <div className="quiz-question">
     <h3>{question.question}</h3>
-    
-  <div className="quiz-answers">
-    {question.answers.map((a, i) => (
-      <button
-        key={i}
-        onClick={() => onAnswer(i === question.correctIndex)}
-      >
-        {a}
-      </button>
-    ))}
+
+    <div className="quiz-answers">
+      {question.answers.map((a, i) => (
+        <button key={i} onClick={() => onAnswer(a.correct)}>
+          {a.text}
+        </button>
+      ))}
     </div>
   </div>
 );

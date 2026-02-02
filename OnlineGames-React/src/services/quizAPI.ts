@@ -7,13 +7,19 @@ export const getQuizzes = async (): Promise<Quiz[]> => {
     throw new Error("Failed to load quizzes");
   }
 
-  return res.json();
+  const data = await res.json();
+
+  return data.map((q: any) => ({
+    id: q.SLUG,
+    title: q.TITLE,
+    description: q.DESCRIPTION,
+  }));
 };
 
 export const getQuizQuestions = async (
-  quizSlug: string
+  quizId: string
 ): Promise<QuizQuestion[]> => {
-  const res = await fetch(`/api/quiz.php?slug=${quizSlug}`);
+  const res = await fetch(`/api/quiz.php?slug=${quizId}`);
 
   if (!res.ok) {
     throw new Error("Failed to load quiz");
@@ -24,6 +30,6 @@ export const getQuizQuestions = async (
   return data.QUIZ.QUESTIONS.map((q: any) => ({
     id: q.ID,
     question: q.QUESTION_TEXT,
-    answers: q.ANSWERS?.map((a: any) => a.ANSWER_TEXT) ?? [],
+    answers: q.ANSWERS.map((a: any) => a.ANSWER_TEXT),
   }));
 };
