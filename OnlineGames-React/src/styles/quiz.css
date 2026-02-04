@@ -1,69 +1,38 @@
-/* ===== Base quiz layout ===== */
-
-.quiz-play {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 18px 16px;
-}
-
-.quiz-play-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-.quiz-progress {
-  font-weight: 700;
-}
-
-.quiz-score {
-  opacity: 0.85;
-  font-weight: 600;
-}
+/* styles/quiz.css */
 
 .quiz-question {
-  padding: 14px 12px;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 16px;
 }
 
 .quiz-question h3 {
-  margin: 0 0 12px 0;
-  font-size: 18px;
-  line-height: 1.2;
+  margin: 0 0 14px 0;
+  font-size: 1.2rem;
 }
 
-/* ===== Multiple choice answers ===== */
+/* -------- MULTIPLE CHOICE -------- */
 
 .quiz-answers {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 10px;
 }
 
 .quiz-answers button {
-  padding: 10px 12px;
-  border: 1px solid #020617;
+  padding: 12px 14px;
   border-radius: 10px;
-  cursor: pointer;
+  border: 1px solid #ddd;
   background: #020617;
+  cursor: pointer;
+  font-size: 16px;
   text-align: left;
-  font-weight: 600;
 }
 
 .quiz-answers button:hover {
-  filter: brightness(0.98);
+  background: #13182d;
 }
 
-.quiz-answers button:active {
-  transform: translateY(1px);
-}
-
-.quiz-answers button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* ===== Matching (table-like) ===== */
+/* -------- MATCHING -------- */
 
 .matching-grid {
   display: grid;
@@ -72,54 +41,39 @@
 }
 
 .matching-col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #020617;
+  min-height: 140px;
 }
 
 .matching-head {
-  font-weight: 800;
-  padding: 6px 4px;
-  border-bottom: 1px solid #e6e6e6;
+  padding: 10px 12px;
+  font-weight: 700;
+  border-bottom: 1px solid #eee;
+  background: #020617;
 }
 
-/* dropzone */
 .matching-dropzone {
-  min-height: 140px;
   padding: 10px;
-  border: 2px dashed #bbb;
-  border-radius: 12px;
-  background: transparent;
+  min-height: 110px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: filter 0.1s ease, background 0.1s ease;
-}
-
-.matching-dropzone.is-dragging {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-/* cards */
-.matching-card {
-  padding: 9px 10px;
-  border: 1px solid #020617;
-  border-radius: 10px;
+  gap: 10px;
   background: #020617;
-  cursor: grab;
-  user-select: none;
-  font-weight: 600;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+
+  /* MOBILE FIX: különben scroll/zoom gesztus elviszi */
+  touch-action: none;
 }
 
-.matching-card:active {
-  cursor: grabbing;
-  transform: translateY(1px);
+.matching-dropzone[data-active="true"] {
+  outline: 2px dashed #888;
+  outline-offset: -6px;
 }
 
-/* bank */
 .matching-bank-wrap {
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .matching-bank-title {
@@ -128,28 +82,68 @@
 }
 
 .matching-bank {
-  border: 1px solid #e1e1e1;
+  border: 1px solid #e6e6e6;
   border-radius: 12px;
   padding: 10px;
-  min-height: 70px;
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
-  background: rgba(0, 0, 0, 0.01);
+  gap: 10px;
+  background: #020617;
+
+  /* MOBILE FIX */
+  touch-action: none;
 }
 
-/* submit */
-.matching-submit {
-  margin-top: 14px;
+.matching-bank[data-active="true"] {
+  outline: 2px dashed #888;
+  outline-offset: -6px;
+}
+
+.matching-card {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid #ddd;
   background: #020617;
-  font-weight: 800;
+  cursor: grab;
+  font-size: 16px;
+  line-height: 1.1;
+
+  /* MOBILE FIX: ez a legfontosabb */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.matching-card:active {
+  cursor: grabbing;
+}
+
+.matching-card.is-dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+  transform: scale(1.02);
+}
+
+/* gomb */
+
+.matching-submit {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #111;
+  color: #fff;
   cursor: pointer;
+  font-size: 16px;
 }
 
 .matching-submit:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* Opcionális: ha JS-ben ráteszed a body-ra drag közben */
+body.is-dragging {
+  overscroll-behavior: none;
 }
