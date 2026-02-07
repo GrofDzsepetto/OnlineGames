@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { QuizQuestion, MatchingPair } from "../types/quiz";
 import "../styles/createQuiz.css";
@@ -17,6 +17,24 @@ const CreateQuiz = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState<CreateQuestion[]>([]);
+
+  // ✅ Láthatóság
+  const [isPublic, setIsPublic] = useState(true);
+  // email mező (textarea), ebből lesz viewerEmails tömb
+  const [viewerEmailsText, setViewerEmailsText] = useState("");
+
+  const parsedViewerEmails = useMemo(() => {
+    // engedjük: vessző / sortörés / szóköz
+    const raw = viewerEmailsText
+      .split(/[\n,;\s]+/g)
+      .map((x) => x.trim().toLowerCase())
+      .filter(Boolean);
+
+    // dedupe
+    const uniq = Array.from(new Set(raw));
+
+    return uniq;
+  }, [viewerEmailsText]);
 
   const addQuestion = () => {
     const newQuestion: CreateQuestion = {
@@ -76,92 +94,89 @@ const CreateQuiz = () => {
     });
   };
 
-const submitQuiz = async () => {
-  const cleanTitle = title.trim();
-  if (!cleanTitle) {
-    alert("Kérlek, adj meg egy címet a kvíznek!");
-    return;
-  }
-
-  const cleanQuestions = questions
-    .map((q) => {
-      const text = (q.question ?? "").trim();
-
-      if (q.type === "MULTIPLE_CHOICE") {
-        const answers = (q.answers ?? [])
-          .map((a) => ({ text: (a.text ?? "").trim(), isCorrect: !!a.correct }))
-          .filter((a) => a.text.length > 0);
-
-        if (!text || answers.length < 2) return null;
-
-        return {
-          text,
-          type: "MULTIPLE_CHOICE" as const,
-          answers,
-          pairs: [],
-        };
-      }
-
-      const pairs = (q.pairs ?? [])
-        .map((p) => {
-          const left = (p.left ?? "").trim();
-          const rights = (p.rights ?? [])
-            .map((r) => (r ?? "").trim())
-            .filter((r) => r.length > 0);
-
-          if (!left || rights.length === 0) return null;
-          return { left, rights };
-        })
-        .filter((x): x is MatchingPair => x !== null);
-
-      if (!text || pairs.length === 0) return null;
-
-      return {
-        text,
-        type: "MATCHING" as const,
-        answers: [],
-        pairs,
-      };
-    })
-    .filter((x) => x !== null);
-
-  if (cleanQuestions.length === 0) {
-    alert("Adj hozzá legalább 1 érvényes kérdést (nem lehet üres)!");
-    return;
-  }
-
-  const payload = {
-    title: cleanTitle,
-    description: (description ?? "").trim(),
-    questions: cleanQuestions,
-  };
-
-  // # Log if needed:
-  // console.log("PAYLOAD:", payload);
-
-  try {
-    const created = await createQuiz(payload);
-
-    // # Log if needed:
-    // console.log("CREATED:", created);
-
-    if (!created?.quiz_id) {
-      alert("A kvíz létrejött, de nem jött vissza quiz_id. Nézd meg a create_quiz.php választ!");
+  const submitQuiz = async () => {
+    const cleanTitle = title.trim();
+    if (!cleanTitle) {
+      alert("Kérlek, adj meg egy címet a kvíznek!");
       return;
     }
 
-    alert("Kvíz sikeresen létrehozva!");
-    navigate("/quizzes");
-  } catch (err: any) {
-    // # Log if needed:
-    // console.error("CreateQuiz error:", err);
+    const cleanQuestions = questions
+      .map((q) => {
+        const text = (q.question ?? "").trim();
 
-    alert("Hiba történt: " + (err?.message || "Ismeretlen hiba"));
-  }
-};
+        if (q.type === "MULTIPLE_CHOICE") {
+          const answers = (q.answers ?? [])
+            .map((a) => ({ text: (a.text ?? "").trim(), isCorrect: !!a.correct }))
+            .filter((a) => a.text.length > 0);
 
+          if (!text || answers.length < 2) return null;
 
+          return {
+            text,
+            type: "MULTIPLE_CHOICE" as const,
+            answers,
+            pairs: [],
+          };
+        }
 
+        const pairs = (q.pairs ?? [])
+          .map((p) => {
+            const left = (p.left ?? "").trim();
+            const rights = (p.rights ?? [])
+              .map((r) => (r ?? "").trim())
+              .filter((r) => r.length > 0);
+
+            if (!left || rights.length === 0) return null;
+            return { left, rights };
+          })
+          .filter((x): x is MatchingPair => x !== null);
+
+        if (!text || pairs.length === 0) return null;
+
+        return {
+          text,
+          type: "MATCHING" as const,
+          answers: [],
+          pairs,
+        };
+      })
+      .filter((x) => x !== null);
+
+    if (cleanQuestions.length === 0) {
+      alert("Adj hozzá legalább 1 érvényes kérdést (nem lehet üres)!");
+      return;
+    }
+
+    // ✅ Private esetén legyen legalább 1 email
+    if (!isPublic && parsedViewerEmails.length === 0) {
+      alert("Privát kvíznél add meg, ki láthatja (legalább 1 email)!");
+      return;
+    }
+
+    const payload: any = {
+      title: cleanTitle,
+      description: (description ?? "").trim(),
+      questions: cleanQuestions,
+      // ✅ Láthatóság mezők a backendhez
+      isPublic,
+      viewerEmails: isPublic ? [] : parsedViewerEmails,
+    };
+
+    try {
+      const created = await createQuiz(payload);
+
+      if (!created?.quiz_id) {
+        alert("A kvíz létrejött, de nem jött vissza quiz_id. Nézd meg a create_quiz.php választ!");
+        return;
+      }
+
+      alert("Kvíz sikeresen létrehozva!");
+      navigate("/quizzes");
+    } catch (err: any) {
+      alert("Hiba történt: " + (err?.message || "Ismeretlen hiba"));
+    }
+  };
 
   return (
     <div className="cq-container">
@@ -181,6 +196,40 @@ const submitQuiz = async () => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+
+        {/* ✅ Láthatóság */}
+        <div className="cq-row" style={{ marginTop: 12, gap: 12, alignItems: "center" }}>
+          <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setIsPublic(next);
+                if (next) setViewerEmailsText("");
+              }}
+            />
+            <span style={{ fontWeight: 600 }}>
+              {isPublic ? "Public (mindenki láthatja)" : "Private (csak megadott emailek)"}
+            </span>
+          </label>
+        </div>
+
+        {/* ✅ Csak Private esetén jelenjen meg */}
+        {!isPublic && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Ki láthatja? (email lista)</div>
+            <textarea
+              className="cq-textarea"
+              placeholder={"Írj be emaileket (soronként vagy vesszővel elválasztva)\npl:\nvalaki@gmail.com\nmasik@outlook.com"}
+              value={viewerEmailsText}
+              onChange={(e) => setViewerEmailsText(e.target.value)}
+            />
+            <div style={{ marginTop: 6, fontSize: 13, opacity: 0.8 }}>
+              Felismert emailek: {parsedViewerEmails.length ? parsedViewerEmails.join(", ") : "—"}
+            </div>
+          </div>
+        )}
       </section>
 
       {questions.map((q, qIdx) => (

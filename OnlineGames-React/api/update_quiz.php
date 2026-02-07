@@ -48,6 +48,10 @@ try {
     $title = trim((string)$data['title']);
     $description = isset($data['description']) ? (string)$data['description'] : '';
 
+    // ✅ Láthatóság
+    $IS_PUBLIC = !empty($data["isPublic"]) ? 1 : 0;
+    $VIEWER_EMAILS = (isset($data["viewerEmails"]) && is_array($data["viewerEmails"])) ? $data["viewerEmails"] : [];
+
     $ownerStmt = $pdo->prepare("SELECT CREATED_BY FROM QUIZ WHERE ID = ? LIMIT 1");
     $ownerStmt->execute([$quizId]);
     $row = $ownerStmt->fetch(PDO::FETCH_ASSOC);
@@ -66,8 +70,44 @@ try {
         exit;
     }
 
-    $upd = $pdo->prepare("UPDATE QUIZ SET TITLE = ?, DESCRIPTION = ? WHERE ID = ?");
-    $upd->execute([$title, $description, $quizId]);
+    // ✅ QUIZ meta update (IS_PUBLIC is)
+    $upd = $pdo->prepare("UPDATE QUIZ SET TITLE = ?, DESCRIPTION = ?, IS_PUBLIC = ? WHERE ID = ?");
+    $upd->execute([$title, $description, $IS_PUBLIC, $quizId]);
+
+    // ✅ Engedélyezett emailek frissítése:
+    // - ha PUBLIC: töröljük a listát
+    // - ha PRIVATE: újraírjuk a listát (DELETE + INSERT)
+    $delViewers = $pdo->prepare("DELETE FROM QUIZ_VIEWER_EMAIL WHERE QUIZ_ID = ?");
+    $delViewers->execute([$quizId]);
+
+    $insertViewerEmail = $pdo->prepare("
+        INSERT IGNORE INTO QUIZ_VIEWER_EMAIL (QUIZ_ID, USER_EMAIL)
+        VALUES (?, ?)
+    ");
+
+    if ($IS_PUBLIC === 0) {
+        foreach ($VIEWER_EMAILS as $rawEmail) {
+            $email = strtolower(trim((string)$rawEmail));
+            if ($email === "") continue;
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) continue;
+
+            $insertViewerEmail->execute([$quizId, $email]);
+        }
+
+        // creator email automatikusan kapjon hozzáférést
+        $creatorEmailStmt = $pdo->prepare("
+            SELECT EMAIL
+            FROM USERS
+            WHERE ID = ?
+            LIMIT 1
+        ");
+        $creatorEmailStmt->execute([$creatorId]);
+        $creatorEmail = $creatorEmailStmt->fetchColumn();
+
+        if ($creatorEmail) {
+            $insertViewerEmail->execute([$quizId, strtolower(trim((string)$creatorEmail))]);
+        }
+    }
 
     $qidsStmt = $pdo->prepare("SELECT ID FROM QUESTION WHERE QUIZ_ID = ?");
     $qidsStmt->execute([$quizId]);
@@ -218,23 +258,13 @@ try {
 } catch (PDOException $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
 
-    // # Log if needed:
-    // error_log("SQL ERROR: " . $e->getMessage());
-    // error_log("SQL CODE: " . $e->getCode());
-    // error_log("SQL TRACE: " . $e->getTraceAsString());
-
     http_response_code(500);
     echo json_encode(["error" => "DB error"], JSON_UNESCAPED_UNICODE);
     exit;
 } catch (Exception $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
 
-    // # Log if needed:
-    // error_log("GENERIC ERROR: " . $e->getMessage());
-    // error_log("GENERIC TRACE: " . $e->getTraceAsString());
-
     http_response_code(500);
     echo json_encode(["error" => $e->getMessage(), "code" => $e->getCode()], JSON_UNESCAPED_UNICODE);
     exit;
 }
-
