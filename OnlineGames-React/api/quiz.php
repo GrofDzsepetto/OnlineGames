@@ -2,16 +2,20 @@
 require __DIR__ . "/bootstrap.php";
 require __DIR__ . "/db.php";
 
+session_start();
+header("Content-Type: application/json; charset=utf-8");
+
 $key = $_GET["slug"] ?? null;
 
 if (!$key) {
     http_response_code(400);
-    echo json_encode(["error" => "Missing quiz slug/id"]);
+    echo json_encode(["error" => "Missing quiz slug/id"], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
+// ✅ Quiz meta: IS_PUBLIC + CREATED_BY is kell
 $quizStmt = $pdo->prepare("
-    SELECT ID, TITLE, DESCRIPTION
+    SELECT ID, TITLE, DESCRIPTION, IS_PUBLIC, CREATED_BY
     FROM QUIZ
     WHERE SLUG = ? OR ID = ?
     LIMIT 1
@@ -21,17 +25,85 @@ $quiz = $quizStmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$quiz) {
     http_response_code(404);
-    echo json_encode(["error" => "Quiz not found"]);
+    echo json_encode(["error" => "Quiz not found"], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
+$quizId = (string)$quiz["ID"];
+$isPublic = !empty($quiz["IS_PUBLIC"]) ? 1 : 0;
+$createdBy = (string)$quiz["CREATED_BY"];
+
+// ✅ Jogosultság ellenőrzés PRIVATE esetén
+$isCreator = false;
+$viewerEmails = [];
+
+if ($isPublic === 0) {
+    if (!isset($_SESSION["user_id"])) {
+        http_response_code(401);
+        echo json_encode(["error" => "Bejelentkezés szükséges!"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $userId = (string)$_SESSION["user_id"];
+    $isCreator = ($userId === $createdBy);
+
+    // lekérjük a user emailt
+    $emailStmt = $pdo->prepare("
+        SELECT EMAIL
+        FROM USERS
+        WHERE ID = ?
+        LIMIT 1
+    ");
+    $emailStmt->execute([$userId]);
+    $userEmail = $emailStmt->fetchColumn();
+
+    if (!$userEmail) {
+        http_response_code(403);
+        echo json_encode(["error" => "Nem sikerült azonosítani a felhasználót."], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $userEmail = strtolower(trim((string)$userEmail));
+
+    if (!$isCreator) {
+        $allowStmt = $pdo->prepare("
+            SELECT 1
+            FROM QUIZ_VIEWER_EMAIL
+            WHERE QUIZ_ID = ?
+            AND USER_EMAIL = ?
+            LIMIT 1
+        ");
+        $allowStmt->execute([$quizId, $userEmail]);
+        $allowed = $allowStmt->fetchColumn();
+
+        if (!$allowed) {
+            http_response_code(403);
+            echo json_encode(["error" => "Nincs jogosultságod ehhez a kvízhez."], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
+    // ✅ viewer_emails csak creatornek (edithez)
+    if ($isCreator) {
+        $viewersStmt = $pdo->prepare("
+            SELECT USER_EMAIL
+            FROM QUIZ_VIEWER_EMAIL
+            WHERE QUIZ_ID = ?
+            ORDER BY USER_EMAIL
+        ");
+        $viewersStmt->execute([$quizId]);
+        $viewerEmails = $viewersStmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+}
+
+// kérdések
 $questionStmt = $pdo->prepare("
     SELECT ID, QUESTION_TEXT, TYPE
     FROM QUESTION
     WHERE QUIZ_ID = ?
     ORDER BY ORDER_INDEX, ID
 ");
-$questionStmt->execute([$quiz["ID"]]);
+$questionStmt->execute([$quizId]);
 $questions = $questionStmt->fetchAll(PDO::FETCH_ASSOC);
 
 $answerStmt = $pdo->prepare("
@@ -61,7 +133,6 @@ foreach ($questions as &$q) {
         $pairStmt->execute([$q["ID"]]);
         $rows = $pairStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // LEFT_ID -> aggregated rights
         $byLeft = [];
 
         foreach ($rows as $row) {
@@ -76,7 +147,6 @@ foreach ($questions as &$q) {
             $byLeft[$leftId]["RIGHT"][] = (string)$row["RIGHT_TEXT"];
         }
 
-        // Keep order as produced by SQL
         $q["GROUPS"] = array_values($byLeft);
     } else {
         $answerStmt->execute([$q["ID"]]);
@@ -85,5 +155,13 @@ foreach ($questions as &$q) {
 }
 
 $quiz["QUESTIONS"] = $questions;
+
+// ✅ visszaadjuk az IS_PUBLIC-ot is
+$quiz["IS_PUBLIC"] = $isPublic;
+
+// ✅ viewer_emails csak creatornek (private esetben)
+if ($isPublic === 0 && $isCreator) {
+    $quiz["VIEWER_EMAILS"] = $viewerEmails;
+}
 
 echo json_encode(["QUIZ" => $quiz], JSON_UNESCAPED_UNICODE);

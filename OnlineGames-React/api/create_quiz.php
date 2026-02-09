@@ -58,19 +58,47 @@ try {
     $title = trim((string)$data["title"]);
     $description = isset($data["description"]) ? (string)$data["description"] : "";
 
-    // slug
+    $IS_PUBLIC = !empty($data["isPublic"]) ? 1 : 0;
+    $VIEWER_EMAILS = (isset($data["viewerEmails"]) && is_array($data["viewerEmails"])) ? $data["viewerEmails"] : [];
+
     $baseSlug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $title), '-'));
     if ($baseSlug === "") $baseSlug = "quiz";
     $slug = $baseSlug . "-" . substr(bin2hex(random_bytes(4)), 0, 6);
 
-    // QUIZ insert
     $stmt = $pdo->prepare("
-        INSERT INTO QUIZ (ID, SLUG, TITLE, DESCRIPTION, IS_PUBLISHED, CREATED_BY)
-        VALUES (?, ?, ?, ?, 1, ?)
+        INSERT INTO QUIZ (ID, SLUG, TITLE, DESCRIPTION, IS_PUBLISHED, IS_PUBLIC, CREATED_BY)
+        VALUES (?, ?, ?, ?, 1, ?, ?)
     ");
-    $stmt->execute([$quizId, $slug, $title, $description, $creatorId]);
+    $stmt->execute([$quizId, $slug, $title, $description, $IS_PUBLIC, $creatorId]);
 
-    // prepared statements
+    $insertViewerEmail = $pdo->prepare("
+        INSERT IGNORE INTO QUIZ_VIEWER_EMAIL (QUIZ_ID, USER_EMAIL)
+        VALUES (?, ?)
+    ");
+
+    if ($IS_PUBLIC === 0) {
+        foreach ($VIEWER_EMAILS as $rawEmail) {
+            $email = strtolower(trim((string)$rawEmail));
+            if ($email === "") continue;
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) continue;
+
+            $insertViewerEmail->execute([$quizId, $email]);
+        }
+
+        $creatorEmailStmt = $pdo->prepare("
+            SELECT EMAIL
+            FROM USERS
+            WHERE ID = ?
+            LIMIT 1
+        ");
+        $creatorEmailStmt->execute([$creatorId]);
+        $creatorEmail = $creatorEmailStmt->fetchColumn();
+
+        if ($creatorEmail) {
+            $insertViewerEmail->execute([$quizId, strtolower(trim((string)$creatorEmail))]);
+        }
+    }
+
     $insertQuestion = $pdo->prepare("
         INSERT INTO QUESTION (ID, QUIZ_ID, TYPE, QUESTION_TEXT, ORDER_INDEX)
         VALUES (?, ?, ?, ?, ?)
@@ -96,7 +124,6 @@ try {
         VALUES (?, ?, ?, ?)
     ");
 
-    // questions loop
     $qOrder = 0;
     foreach ($data["questions"] as $q) {
         if (!is_array($q)) continue;
@@ -110,7 +137,6 @@ try {
         $questionId = db_uuid($pdo);
         $insertQuestion->execute([$questionId, $quizId, $type, $qText, $qOrder]);
 
-        // MULTIPLE_CHOICE
         if ($type === "MULTIPLE_CHOICE") {
             $answers = (isset($q["answers"]) && is_array($q["answers"])) ? $q["answers"] : [];
 
@@ -129,7 +155,6 @@ try {
             }
         }
 
-        // MATCHING
         if ($type === "MATCHING") {
             $pairs = (isset($q["pairs"]) && is_array($q["pairs"])) ? $q["pairs"] : [];
 
@@ -146,7 +171,6 @@ try {
 
                 $rights = (isset($pair["rights"]) && is_array($pair["rights"])) ? $pair["rights"] : [];
 
-                // clean rights
                 $cleanRights = [];
                 foreach ($rights as $x) {
                     $t = trim((string)$x);
@@ -156,7 +180,6 @@ try {
 
                 if (empty($rights)) continue;
 
-                // LEFT dedupe
                 if (!isset($leftIdByText[$leftText])) {
                     $leftOrder++;
                     $leftId = db_uuid($pdo);
@@ -166,7 +189,6 @@ try {
                     $leftId = $leftIdByText[$leftText];
                 }
 
-                // RIGHT items + PAIRS
                 foreach ($rights as $rText) {
                     if (!isset($rightIdByText[$rText])) {
                         $rightOrder++;
@@ -184,7 +206,6 @@ try {
         }
     }
 
-    // ha nem volt egyetlen valid kérdés sem:
     if ($qOrder === 0) {
         $pdo->rollBack();
         http_response_code(400);
@@ -205,21 +226,12 @@ try {
 } catch (PDOException $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
 
-    // # Log if needed:
-    // error_log("CREATE_QUIZ SQL ERROR: " . $e->getMessage());
-    // error_log("CREATE_QUIZ SQL CODE: " . $e->getCode());
-    // error_log("CREATE_QUIZ TRACE: " . $e->getTraceAsString());
-
     http_response_code(500);
     echo json_encode(["error" => "DB error"], JSON_UNESCAPED_UNICODE);
     exit;
 
 } catch (Exception $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-
-    // # Log if needed:
-    // error_log("CREATE_QUIZ ERROR: " . $e->getMessage());
-    // error_log("CREATE_QUIZ TRACE: " . $e->getTraceAsString());
 
     http_response_code(500);
     echo json_encode([
@@ -228,4 +240,3 @@ try {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
-

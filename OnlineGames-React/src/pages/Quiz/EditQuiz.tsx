@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { QuizQuestion, MatchingPair } from "../../types/quiz";
 import { getQuizForEdit, updateQuiz } from "../../services/quizService";
@@ -21,6 +21,19 @@ const EditQuiz = () => {
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState<CreateQuestion[]>([]);
 
+  // ✅ Láthatóság
+  const [isPublic, setIsPublic] = useState(true);
+  const [viewerEmailsText, setViewerEmailsText] = useState("");
+
+  const parsedViewerEmails = useMemo(() => {
+    const raw = viewerEmailsText
+      .split(/[\n,;\s]+/g)
+      .map((x) => x.trim().toLowerCase())
+      .filter(Boolean);
+
+    return Array.from(new Set(raw));
+  }, [viewerEmailsText]);
+
   useEffect(() => {
     if (!id) {
       setLoading(false);
@@ -30,17 +43,54 @@ const EditQuiz = () => {
     setLoading(true);
 
     getQuizForEdit(id)
-      .then((q) => {
-        setQuizId(q.quiz_id);
-        setTitle(q.title);
+      .then((q: any) => {
+        // ✅ get_quiz_for_edit.php formátum:
+        // { quiz_id, title, description, isPublic, viewerEmails, questions[] }
+        console.log("EDIT QUIZ RESPONSE:", q);
+        setQuizId(q.quiz_id ?? "");
+        setTitle(q.title ?? "");
         setDescription(q.description ?? "");
 
-        const mapped: CreateQuestion[] = (q.questions ?? []).map((qq) => ({
-          type: qq.type,
-          question: qq.question,
-          answers: qq.type === "MULTIPLE_CHOICE" ? (qq.answers ?? []) : [{ text: "", correct: false }, { text: "", correct: false }],
-          pairs: qq.type === "MATCHING" ? (qq.pairs ?? []) : [{ left: "", rights: [""] }],
-        }));
+        const pub = !!q.isPublic;
+        setIsPublic(pub);
+
+        const emails = Array.isArray(q.viewerEmails) ? q.viewerEmails : [];
+        setViewerEmailsText(!pub ? emails.join("\n") : "");
+
+        const mapped: CreateQuestion[] = (q.questions ?? []).map((qq: any) => {
+          const type: QuestionType = (qq.type ?? "MULTIPLE_CHOICE") as QuestionType;
+
+          if (type === "MULTIPLE_CHOICE") {
+            const answers = Array.isArray(qq.answers) ? qq.answers : [];
+            return {
+              type,
+              question: qq.question ?? "",
+              answers:
+                answers.length > 0
+                  ? answers.map((a: any) => ({
+                      text: a.text ?? "",
+                      correct: !!a.isCorrect,
+                    }))
+                  : [
+                      { text: "", correct: false },
+                      { text: "", correct: false },
+                    ],
+              pairs: [{ left: "", rights: [""] }],
+            };
+          }
+
+          // MATCHING
+          const pairs = Array.isArray(qq.pairs) ? qq.pairs : [];
+          return {
+            type,
+            question: qq.question ?? "",
+            answers: [
+              { text: "", correct: false },
+              { text: "", correct: false },
+            ],
+            pairs: pairs.length ? pairs : [{ left: "", rights: [""] }],
+          };
+        });
 
         setQuestions(mapped.length ? mapped : []);
       })
@@ -114,24 +164,78 @@ const EditQuiz = () => {
       return;
     }
 
-    if (!title.trim()) {
+    const cleanTitle = title.trim();
+    if (!cleanTitle) {
       alert("Kérlek, adj meg egy címet a kvíznek!");
+      return;
+    }
+
+    // ✅ Private esetén legyen legalább 1 email
+    if (!isPublic && parsedViewerEmails.length === 0) {
+      alert("Privát kvíznél add meg, ki láthatja (legalább 1 email)!");
+      return;
+    }
+
+    const cleanQuestions = questions
+      .map((q) => {
+        const text = (q.question ?? "").trim();
+        if (!text) return null;
+
+        if (q.type === "MULTIPLE_CHOICE") {
+          const answers = (q.answers ?? [])
+            .map((a) => ({
+              text: (a.text ?? "").trim(),
+              isCorrect: !!a.correct,
+            }))
+            .filter((a) => a.text.length > 0);
+
+          if (answers.length < 2) return null;
+
+          return {
+            text,
+            type: "MULTIPLE_CHOICE" as const,
+            answers,
+            pairs: [],
+          };
+        }
+
+        const pairs = (q.pairs ?? [])
+          .map((p) => {
+            const left = (p.left ?? "").trim();
+            const rights = (p.rights ?? [])
+              .map((r) => (r ?? "").trim())
+              .filter((r) => r.length > 0);
+
+            if (!left || rights.length === 0) return null;
+            return { left, rights };
+          })
+          .filter((x): x is MatchingPair => x !== null);
+
+        if (pairs.length === 0) return null;
+
+        return {
+          text,
+          type: "MATCHING" as const,
+          answers: [],
+          pairs,
+        };
+      })
+      .filter((x) => x !== null);
+
+    if (cleanQuestions.length === 0) {
+      alert("Adj meg legalább 1 érvényes kérdést!");
       return;
     }
 
     const payload = {
       quiz_id: quizId,
-      title: title.trim(),
-      description,
-      questions: questions.map((q) => ({
-        text: (q.question ?? "").trim(),
-        type: q.type,
-        answers:
-          q.type === "MULTIPLE_CHOICE"
-            ? q.answers.map((a) => ({ text: a.text, isCorrect: a.correct }))
-            : [],
-        pairs: q.type === "MATCHING" ? q.pairs : [],
-      })),
+      title: cleanTitle,
+      description: (description ?? "").trim(),
+      questions: cleanQuestions,
+
+      // ✅ Láthatóság mezők az update_quiz.php-hoz
+      isPublic,
+      viewerEmails: isPublic ? [] : parsedViewerEmails,
     };
 
     try {
@@ -163,6 +267,42 @@ const EditQuiz = () => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+
+        {/* ✅ Láthatóság */}
+        <div className="cq-row" style={{ marginTop: 12, gap: 12, alignItems: "center" }}>
+          <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setIsPublic(next);
+                if (next) setViewerEmailsText("");
+              }}
+            />
+            <span style={{ fontWeight: 600 }}>
+              {isPublic ? "Public (mindenki láthatja)" : "Private (csak megadott emailek)"}
+            </span>
+          </label>
+        </div>
+
+        {/* ✅ Csak Private esetén */}
+        {!isPublic && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Ki láthatja? (email lista)</div>
+            <textarea
+              className="cq-textarea"
+              placeholder={
+                "Írj be emaileket (soronként vagy vesszővel elválasztva)\npl:\nvalaki@gmail.com\nmasik@outlook.com"
+              }
+              value={viewerEmailsText}
+              onChange={(e) => setViewerEmailsText(e.target.value)}
+            />
+            <div style={{ marginTop: 6, fontSize: 13, opacity: 0.8 }}>
+              Felismert emailek: {parsedViewerEmails.length ? parsedViewerEmails.join(", ") : "—"}
+            </div>
+          </div>
+        )}
       </section>
 
       {questions.map((q, qIdx) => (
@@ -297,7 +437,10 @@ const EditQuiz = () => {
                           onClick={() => {
                             const nextPairs = [...q.pairs];
                             const nextRights = nextPairs[pIdx].rights.filter((_, i) => i !== rIdx);
-                            nextPairs[pIdx] = { ...nextPairs[pIdx], rights: nextRights.length ? nextRights : [""] };
+                            nextPairs[pIdx] = {
+                              ...nextPairs[pIdx],
+                              rights: nextRights.length ? nextRights : [""],
+                            };
                             handleQuestionField(qIdx, "pairs", nextPairs);
                           }}
                         >
@@ -310,7 +453,10 @@ const EditQuiz = () => {
                       className="cq-btn cq-btn--secondary"
                       onClick={() => {
                         const nextPairs = [...q.pairs];
-                        nextPairs[pIdx] = { ...nextPairs[pIdx], rights: [...nextPairs[pIdx].rights, ""] };
+                        nextPairs[pIdx] = {
+                          ...nextPairs[pIdx],
+                          rights: [...nextPairs[pIdx].rights, ""],
+                        };
                         handleQuestionField(qIdx, "pairs", nextPairs);
                       }}
                     >

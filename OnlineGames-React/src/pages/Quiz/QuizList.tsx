@@ -101,7 +101,13 @@ const QuizList = () => {
                 </div>
               )}
 
-              <QuizCard quiz={quiz} />
+              <div
+                onClick={() => navigate(`/quiz/${quiz.slug}`)}
+                style={{ cursor: "pointer" }}
+              >
+                <QuizCard quiz={quiz} />
+              </div>
+
 
               {quiz.creator_name && (
                 <span className="creator-name">
