@@ -37,6 +37,7 @@ const Navbar = () => {
           </div>
         ) : (
           <NavLink to="/login">Login</NavLink>
+          
         )}
       </div>
     </nav>

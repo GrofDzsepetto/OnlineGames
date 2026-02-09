@@ -18,42 +18,34 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  const refreshUser = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/auth/user.php`, {
-        credentials: "include",
-      });
+const refreshUser = async () => {
+  const res = await fetch(`${API_BASE}/auth/user.php`, {
+    credentials: "include",
+  });
 
-      if (!res.ok) {
-        setUser(null);
-        return;
-      }
+  const text = await res.text();
+  console.log("RAW user.php response:", text);
 
-      const data = await res.json().catch(() => null);
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    setUser(null);
+    return;
+  }
 
-      if (!data?.user) {
-        setUser(null);
-        return;
-      }
+  if (!data?.user) {
+    setUser(null);
+    return;
+  }
 
-      const u = data.user;
+  setUser({
+    id: String(data.user.id),
+    email: String(data.user.email),
+    name: data.user.name ?? "",
+  });
+};
 
-      // Biztosítsuk a típust + legyen id string
-      if (u.id == null || u.email == null || u.name == null) {
-        setUser(null);
-        return;
-      }
-
-      setUser({
-        id: String(u.id),
-        email: String(u.email),
-        name: String(u.name),
-      });
-    } catch (error) {
-      console.error("Hiba a felhasználó lekérésekor:", error);
-      setUser(null);
-    }
-  };
 
   const logout = async () => {
     try {

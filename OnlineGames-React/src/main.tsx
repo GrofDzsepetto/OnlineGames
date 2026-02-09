@@ -9,7 +9,9 @@ import "./styles/globals.css";
 import "./styles/layout.css";
 import "./styles/buttons.css";
 import "./styles/cards.css";
-import "./styles/quiz.css";
+import "./styles/Quiz/quiz.css"
+import "./styles/Quiz/createQuiz.css"
+import "./styles/Quiz/quizList.css"
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
 if (!CLIENT_ID) {

@@ -4,6 +4,24 @@ import type { ApiQuizResponse, ApiQuestion } from "./quizApi.types";
 
 const toBool = (v: any) => v === 1 || v === "1" || v === true;
 
+export type CreateQuizPayload = {
+  title: string;
+  description: string;
+  questions: Array<{
+    text: string;
+    type: "MULTIPLE_CHOICE" | "MATCHING";
+    answers: Array<{ text: string; isCorrect: boolean }>;
+    pairs: MatchingPair[];
+  }>;
+};
+
+export type QuizForEdit = {
+  quiz_id: string;
+  title: string;
+  description: string;
+  questions: QuizQuestion[];
+};
+
 export async function getQuizzes(): Promise<Quiz[]> {
   const res = await fetch(`${API_BASE}/quizzes.php`, { credentials: "include" });
   const raw = await res.text();
@@ -65,65 +83,6 @@ export async function getQuizQuestions(slugOrId: string): Promise<QuizQuestion[]
   });
 }
 
-export async function deleteQuiz(quizId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/delete_quiz.php`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ quiz_id: quizId }),
-  });
-
-  const raw = await res.text();
-  let data: any = null;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    data = null;
-  }
-
-  if (!res.ok) throw new Error(data?.error || `Delete failed (HTTP ${res.status})`);
-}
-
-export type CreateQuizPayload = {
-  title: string;
-  description: string;
-  questions: Array<{
-    text: string;
-    type: "MULTIPLE_CHOICE" | "MATCHING";
-    answers: Array<{ text: string; isCorrect: boolean }>;
-    pairs: MatchingPair[];
-  }>;
-};
-
-export async function createQuiz(payload: CreateQuizPayload): Promise<{ quiz_id: string; slug: string }> {
-  const res = await fetch(`${API_BASE}/create_quiz.php`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(payload),
-  });
-
-  const raw = await res.text();
-
-  let data: any = null;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    throw new Error("Invalid JSON from create_quiz.php:\n" + raw.slice(0, 300));
-  }
-
-  if (!res.ok) throw new Error(data?.error || `Create failed (HTTP ${res.status})`);
-
-  return { quiz_id: String(data.quiz_id), slug: String(data.slug) };
-}
-
-export type QuizForEdit = {
-  quiz_id: string;
-  title: string;
-  description: string;
-  questions: QuizQuestion[];
-};
-
 export async function getQuizForEdit(slugOrId: string): Promise<QuizForEdit> {
   const res = await fetch(`${API_BASE}/quiz.php?slug=${encodeURIComponent(slugOrId)}`, {
     credentials: "include",
@@ -174,6 +133,28 @@ export async function getQuizForEdit(slugOrId: string): Promise<QuizForEdit> {
   };
 }
 
+export async function createQuiz(payload: CreateQuizPayload): Promise<{ quiz_id: string; slug: string }> {
+  const res = await fetch(`${API_BASE}/create_quiz.php`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  const raw = await res.text();
+
+  let data: any = null;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    throw new Error("Invalid JSON from create_quiz.php:\n" + raw.slice(0, 300));
+  }
+
+  if (!res.ok) throw new Error(data?.error || `Create failed (HTTP ${res.status})`);
+
+  return { quiz_id: String(data.quiz_id), slug: String(data.slug) };
+}
+
 export async function updateQuiz(payload: { quiz_id: string } & CreateQuizPayload): Promise<void> {
   const res = await fetch(`${API_BASE}/update_quiz.php`, {
     method: "POST",
@@ -192,4 +173,23 @@ export async function updateQuiz(payload: { quiz_id: string } & CreateQuizPayloa
   }
 
   if (!res.ok) throw new Error(data?.error || `Update failed (HTTP ${res.status})`);
+}
+
+export async function deleteQuiz(quizId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/delete_quiz.php`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ quiz_id: quizId }),
+  });
+
+  const raw = await res.text();
+  let data: any = null;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    data = null;
+  }
+
+  if (!res.ok) throw new Error(data?.error || `Delete failed (HTTP ${res.status})`);
 }

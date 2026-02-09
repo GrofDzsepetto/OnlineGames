@@ -9,10 +9,11 @@ const Login = () => {
   return (
    <GoogleLogin
   onSuccess={async (cred) => {
+    //Log if Needed
     //console.log("Google success", cred);
 
     if (!cred.credential) {
-      //console.log("No credential");
+      console.log("No credential");
       return;
     }
 
@@ -27,13 +28,7 @@ const Login = () => {
 
 const text = await res.text();
 console.log("RAW google.php response:", text);
-
-
-
-    //console.log("Refreshing user...");
     await refreshUser();
-    //console.log("User refreshed");
-
     navigate("/");
   }}
 />

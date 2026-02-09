@@ -11,8 +11,6 @@
   font-size: 1.2rem;
 }
 
-/* -------- MULTIPLE CHOICE -------- */
-
 .quiz-answers {
   display: grid;
   gap: 10px;
@@ -31,8 +29,6 @@
 .quiz-answers button:hover {
   background: #13182d;
 }
-
-/* -------- MATCHING -------- */
 
 .matching-grid {
   display: grid;
@@ -62,8 +58,6 @@
   flex-direction: column;
   gap: 10px;
   background: #020617;
-
-  /* MOBILE FIX: különben scroll/zoom gesztus elviszi */
   touch-action: none;
 }
 
@@ -89,8 +83,6 @@
   flex-wrap: wrap;
   gap: 10px;
   background: #020617;
-
-  /* MOBILE FIX */
   touch-action: none;
 }
 
@@ -107,8 +99,6 @@
   cursor: grab;
   font-size: 16px;
   line-height: 1.1;
-
-  /* MOBILE FIX: ez a legfontosabb */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -125,8 +115,6 @@
   transform: scale(1.02);
 }
 
-/* gomb */
-
 .matching-submit {
   margin-top: 16px;
   padding: 12px 14px;
@@ -142,8 +130,6 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
-
-/* Opcionális: ha JS-ben ráteszed a body-ra drag közben */
 body.is-dragging {
   overscroll-behavior: none;
 }

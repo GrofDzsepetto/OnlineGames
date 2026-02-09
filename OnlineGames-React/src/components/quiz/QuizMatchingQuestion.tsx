@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { QuizQuestion } from "../../types/quiz";
-import "../../styles/quiz.css";
 
 type Card = {
   id: string;
@@ -118,7 +117,6 @@ const QuizMatchingQuestion = ({
       try {
         dragEl.current.releasePointerCapture(dragPointerId.current);
       } catch {
-        // ignore
       }
     }
 
@@ -148,7 +146,6 @@ const QuizMatchingQuestion = ({
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
-      // ignore
     }
 
     updateActiveDropFromPoint(e.clientX, e.clientY);

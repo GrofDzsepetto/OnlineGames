@@ -1,8 +1,7 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import type { QuizQuestion, MatchingPair } from "../types/quiz";
-import "../styles/createQuiz.css";
-import { createQuiz } from "../services/quizService";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import type { QuizQuestion, MatchingPair } from "../../types/quiz";
+import { getQuizForEdit, updateQuiz } from "../../services/quizService";
 
 type QuestionType = "MULTIPLE_CHOICE" | "MATCHING";
 
@@ -11,12 +10,45 @@ type CreateQuestion = Omit<QuizQuestion, "id"> & {
   pairs: MatchingPair[];
 };
 
-const CreateQuiz = () => {
+const EditQuiz = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+
+  const [loading, setLoading] = useState(true);
+  const [quizId, setQuizId] = useState<string>("");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState<CreateQuestion[]>([]);
+
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    getQuizForEdit(id)
+      .then((q) => {
+        setQuizId(q.quiz_id);
+        setTitle(q.title);
+        setDescription(q.description ?? "");
+
+        const mapped: CreateQuestion[] = (q.questions ?? []).map((qq) => ({
+          type: qq.type,
+          question: qq.question,
+          answers: qq.type === "MULTIPLE_CHOICE" ? (qq.answers ?? []) : [{ text: "", correct: false }, { text: "", correct: false }],
+          pairs: qq.type === "MATCHING" ? (qq.pairs ?? []) : [{ left: "", rights: [""] }],
+        }));
+
+        setQuestions(mapped.length ? mapped : []);
+      })
+      .catch((e: any) => {
+        alert(e?.message ?? "Nem sikerült betölteni a kvízt");
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
 
   const addQuestion = () => {
     const newQuestion: CreateQuestion = {
@@ -76,96 +108,46 @@ const CreateQuiz = () => {
     });
   };
 
-const submitQuiz = async () => {
-  const cleanTitle = title.trim();
-  if (!cleanTitle) {
-    alert("Kérlek, adj meg egy címet a kvíznek!");
-    return;
-  }
-
-  const cleanQuestions = questions
-    .map((q) => {
-      const text = (q.question ?? "").trim();
-
-      if (q.type === "MULTIPLE_CHOICE") {
-        const answers = (q.answers ?? [])
-          .map((a) => ({ text: (a.text ?? "").trim(), isCorrect: !!a.correct }))
-          .filter((a) => a.text.length > 0);
-
-        if (!text || answers.length < 2) return null;
-
-        return {
-          text,
-          type: "MULTIPLE_CHOICE" as const,
-          answers,
-          pairs: [],
-        };
-      }
-
-      const pairs = (q.pairs ?? [])
-        .map((p) => {
-          const left = (p.left ?? "").trim();
-          const rights = (p.rights ?? [])
-            .map((r) => (r ?? "").trim())
-            .filter((r) => r.length > 0);
-
-          if (!left || rights.length === 0) return null;
-          return { left, rights };
-        })
-        .filter((x): x is MatchingPair => x !== null);
-
-      if (!text || pairs.length === 0) return null;
-
-      return {
-        text,
-        type: "MATCHING" as const,
-        answers: [],
-        pairs,
-      };
-    })
-    .filter((x) => x !== null);
-
-  if (cleanQuestions.length === 0) {
-    alert("Adj hozzá legalább 1 érvényes kérdést (nem lehet üres)!");
-    return;
-  }
-
-  const payload = {
-    title: cleanTitle,
-    description: (description ?? "").trim(),
-    questions: cleanQuestions,
-  };
-
-  // # Log if needed:
-  // console.log("PAYLOAD:", payload);
-
-  try {
-    const created = await createQuiz(payload);
-
-    // # Log if needed:
-    // console.log("CREATED:", created);
-
-    if (!created?.quiz_id) {
-      alert("A kvíz létrejött, de nem jött vissza quiz_id. Nézd meg a create_quiz.php választ!");
+  const submit = async () => {
+    if (!quizId) {
+      alert("Hiányzó quiz id");
       return;
     }
 
-    alert("Kvíz sikeresen létrehozva!");
-    navigate("/quizzes");
-  } catch (err: any) {
-    // # Log if needed:
-    // console.error("CreateQuiz error:", err);
+    if (!title.trim()) {
+      alert("Kérlek, adj meg egy címet a kvíznek!");
+      return;
+    }
 
-    alert("Hiba történt: " + (err?.message || "Ismeretlen hiba"));
-  }
-};
+    const payload = {
+      quiz_id: quizId,
+      title: title.trim(),
+      description,
+      questions: questions.map((q) => ({
+        text: (q.question ?? "").trim(),
+        type: q.type,
+        answers:
+          q.type === "MULTIPLE_CHOICE"
+            ? q.answers.map((a) => ({ text: a.text, isCorrect: a.correct }))
+            : [],
+        pairs: q.type === "MATCHING" ? q.pairs : [],
+      })),
+    };
 
+    try {
+      await updateQuiz(payload);
+      alert("Kvíz sikeresen frissítve!");
+      navigate("/quizzes");
+    } catch (e: any) {
+      alert(e?.message ?? "Mentés sikertelen");
+    }
+  };
 
-
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="cq-container">
-      <h1 className="cq-title">Új Kvíz Létrehozása</h1>
+      <h1 className="cq-title">Kvíz szerkesztése</h1>
 
       <section className="cq-section cq-section--meta">
         <input
@@ -357,12 +339,12 @@ const submitQuiz = async () => {
           + Új kérdés hozzáadása
         </button>
 
-        <button className="cq-btn cq-btn--save" onClick={submitQuiz}>
-          Kvíz Mentése
+        <button className="cq-btn cq-btn--save" onClick={submit}>
+          Mentés
         </button>
       </div>
     </div>
   );
 };
 
-export default CreateQuiz;
+export default EditQuiz;
