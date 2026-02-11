@@ -1,0 +1,19 @@
+{
+  "home": {
+    "title": "Mini játékok",
+    "quizzes": "Kvízek",
+    "comingSoon": "Hamarosan..."
+  },
+  "help": {
+    "title": "Súgó",
+    "about": "A Mini Games egy kis interaktív játékgyűjtemény.",
+    "back": "Vissza a főoldalra"
+  },
+  "nav":{
+    "home" : "Home",
+    "quizzes" : "Kvizek",
+    "help" : "Segítség", 
+    "login" : "Bejelentkezés",
+    "logout" : "Kijelentkezés"
+  }
+}

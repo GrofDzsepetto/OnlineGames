@@ -1,0 +1,75 @@
+/* layout.css */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background-color: #020617;
+  border-bottom: 1px solid #1e293b;
+}
+
+nav a {
+  margin-right: 1rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  text-decoration: none;
+}
+
+nav a.active {
+  color: #38bdf8;
+}
+
+/* LEFT / RIGHT */
+.nav-left,
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* 🌍 Language switcher */
+.lang-switcher button {
+  background: transparent;
+  border: 1px solid #334155;
+  color: #e5e7eb;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.lang-switcher button.active {
+  background-color: #38bdf8;
+  color: #020617;
+  font-weight: 700;
+}
+
+/* 👤 Auth */
+.auth-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #e5e7eb;
+}
+
+.logout-btn {
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.logout-btn:hover {
+  background-color: #dc2626;
+}
+
+/* footer marad, ahogy volt */
+footer {
+  text-align: center;
+  padding: 1rem;
+  background-color: #020617;
+  border-top: 1px solid #1e293b;
+  font-size: 0.875rem;
+  color: #94a3b8;
+}

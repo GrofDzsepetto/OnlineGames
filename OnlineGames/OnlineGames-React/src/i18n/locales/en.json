@@ -1,0 +1,19 @@
+{
+  "home": {
+    "title": "Mini Games",
+    "quizzes": "Quizzes",
+    "comingSoon": "Coming soon..."
+  },
+  "help": {
+    "title": "Help",
+    "about": "Mini Games is a collection of small interactive games.",
+    "back": "Back to Home"
+  },
+  "nav":{
+    "home" : "Home",
+    "quizzes" : "Quizzes",
+    "help" : "help", 
+    "login" : "login",
+    "logout" : "logout"
+  }
+}

@@ -1,8 +1,0 @@
-.homeLayout{
-    background: transparent;
-    display: flex;
-    justify-content: flex-start;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-}
