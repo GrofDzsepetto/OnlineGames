@@ -7,24 +7,30 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  color: #e6e6e6;
 }
 
 .helpTitle {
   font-size: 2.5rem;
   text-align: center;
+  color: #ffffff;
 }
 
 .helpCard {
-  background: white;
+  background: #1a1d26; /* card sötétebb szürke */
   padding: 1.5rem 2rem;
   border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+
+  border: 1px solid #262a35;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
 .helpCard h2 {
   margin-bottom: 0.5rem;
+  color: #ffffff;
 }
 
 .helpCard p {
   line-height: 1.6;
+  color: #cfd3dc;
 }

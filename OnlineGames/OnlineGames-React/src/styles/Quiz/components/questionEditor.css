@@ -1,0 +1,232 @@
+/* ================= ROOT CARD ================= */
+
+.cq-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.cq-card:hover {
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
+}
+
+/* ================= ROWS ================= */
+
+.cq-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.cq-row--header {
+  margin-bottom: 16px;
+}
+
+.cq-row--answer {
+  margin-bottom: 8px;
+}
+
+/* ================= BODY ================= */
+
+.cq-body {
+  margin-top: 10px;
+}
+
+.cq-body--indent {
+  padding-left: 32px;
+}
+
+.cq-body--matching {
+  padding-left: 20px;
+}
+
+/* ================= QUESTION NUMBER ================= */
+
+.cq-qnum {
+  font-weight: 600;
+  font-size: 18px;
+  color: #444;
+  min-width: 24px;
+}
+
+/* ================= INPUTS ================= */
+
+.cq-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #dcdcdc;
+  font-size: 14px;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cq-input:focus {
+  outline: none;
+  border-color: #4f8cff;
+  box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.15);
+}
+
+.cq-input--answer {
+  flex: 2;
+}
+
+.cq-textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #dcdcdc;
+  font-size: 14px;
+  resize: vertical;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cq-textarea:focus {
+  outline: none;
+  border-color: #4f8cff;
+  box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.15);
+}
+
+/* ================= SELECT ================= */
+
+.cq-select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #dcdcdc;
+  font-size: 14px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.cq-select:focus {
+  outline: none;
+  border-color: #4f8cff;
+}
+
+/* ================= BUTTON BASE ================= */
+
+.cq-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cq-btn:hover {
+  transform: translateY(-1px);
+}
+
+.cq-btn:active {
+  transform: translateY(0);
+}
+
+/* ================= BUTTON VARIANTS ================= */
+
+.cq-btn--primary {
+  background: #4f8cff;
+  color: white;
+}
+
+.cq-btn--primary:hover {
+  background: #3d74d6;
+}
+
+.cq-btn--secondary {
+  background: #f2f4f8;
+  color: #333;
+}
+
+.cq-btn--secondary:hover {
+  background: #e4e7ec;
+}
+
+.cq-btn--gray {
+  background: #e9ecef;
+  color: #333;
+}
+
+.cq-btn--gray:hover {
+  background: #dfe3e8;
+}
+
+.cq-btn--danger {
+  background: #ff5c5c;
+  color: white;
+}
+
+.cq-btn--danger:hover {
+  background: #e04848;
+}
+
+.cq-btn--outlineDanger {
+  background: transparent;
+  border: 1px solid #ff5c5c;
+  color: #ff5c5c;
+}
+
+.cq-btn--outlineDanger:hover {
+  background: #ff5c5c;
+  color: white;
+}
+
+/* ================= ICON BUTTON ================= */
+
+.cq-iconbtn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  transition: transform 0.15s ease;
+}
+
+.cq-iconbtn:hover {
+  transform: scale(1.15);
+}
+
+/* ================= MATCHING ================= */
+
+.cq-pair {
+  background: #f9fafc;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 16px;
+  border: 1px solid #eef1f4;
+}
+
+/* ================= FOOTER ================= */
+
+.cq-footer {
+  margin-top: 30px;
+  text-align: center;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 768px) {
+  .cq-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cq-body--indent,
+  .cq-body--matching {
+    padding-left: 0;
+  }
+
+  .cq-input {
+    width: 100%;
+  }
+
+  .cq-select {
+    width: 100%;
+  }
+}

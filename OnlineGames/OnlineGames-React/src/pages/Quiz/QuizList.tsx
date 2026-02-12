@@ -49,14 +49,30 @@ const QuizList = () => {
   return (
     <div>
       <div className="quizlist-header">
-        <h2 className="quizlist-title">Select a Quiz</h2>
+        {/* LEFT */}
+        <div className="quizlist-left">
+          <select className="quiz-language-select">
+            <option value="hu">🇭🇺 Magyar</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="de">🇩🇪 Deutsch</option>
+          </select>
+        </div>
 
-        {user && (
-          <Link to="/create-quiz" className="create-quiz-btn">
-            + Create Quiz
-          </Link>
-        )}
+        {/* CENTER */}
+        <div className="quizlist-center">
+          <h2 className="quizlist-title">Select a Quiz</h2>
+        </div>
+
+        {/* RIGHT */}
+        <div className="quizlist-right">
+          {user && (
+            <Link to="/create-quiz" className="create-quiz-btn">
+              + Create Quiz
+            </Link>
+          )}
+        </div>
       </div>
+
 
       {quizzes.length > 0 ? (
         quizzes.map((quiz) => {
