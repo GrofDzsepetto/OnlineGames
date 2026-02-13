@@ -42,22 +42,30 @@ const QuizInfo = () => {
 
     getQuizMeta(slug)
       .then(async (meta) => {
+
+        console.log("META RAW:", meta);
+
         setQuiz(meta);
 
-        // ✅ results betöltés quizId alapján
         if (meta?.id) {
           setResultsLoading(true);
           setResultsError(null);
 
           try {
-            const r = await getQuizResults(meta.id);
+            if (slug) {
+                const r = await getQuizResults(slug);
+                console.log("RESULT RAW:", r); 
+              
+
             setResults((r.results ?? []) as QuizResultRow[]);
+            }
           } catch (e: any) {
             setResults([]);
             setResultsError(e?.message ?? "Failed to load results");
           } finally {
             setResultsLoading(false);
           }
+          
         }
       })
       .catch((e) => setError(e?.message ?? "Failed to load quiz"))

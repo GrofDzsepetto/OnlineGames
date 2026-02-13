@@ -34,3 +34,29 @@
   line-height: 1.6;
   color: #cfd3dc;
 }
+
+.helpCard a {
+  margin-left: 10px;
+  display: inline-block;
+  margin-top: 12px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #4f8cff;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.helpCard a:hover {
+  background: #3d74d6;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(79, 140, 255, 0.25);
+}
+
+.helpCard a:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+

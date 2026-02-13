@@ -2,15 +2,14 @@
 require __DIR__ . "/bootstrap.php";
 require __DIR__ . "/db.php";
 
-
 $userId = isset($_SESSION["user_id"]) ? (string)$_SESSION["user_id"] : null;
 $userEmail = null;
 
 if ($userId) {
     $emailStmt = $pdo->prepare("
-        SELECT EMAIL
-        FROM USERS
-        WHERE ID = ?
+        SELECT email
+        FROM users
+        WHERE id = ?
         LIMIT 1
     ");
     $emailStmt->execute([$userId]);
@@ -20,20 +19,22 @@ if ($userId) {
 
 try {
     if (!$userId || !$userEmail) {
+
         $sql = "
             SELECT 
-                Q.ID, 
-                Q.SLUG, 
-                Q.TITLE, 
-                Q.DESCRIPTION,
-                Q.CREATED_BY,
-                Q.IS_PUBLIC,
-                U.NAME AS CREATOR_NAME
-            FROM QUIZ Q
-            LEFT JOIN USERS U ON Q.CREATED_BY = U.ID
-            WHERE Q.IS_PUBLISHED = 1
-              AND Q.IS_PUBLIC = 1
-            ORDER BY Q.CREATED_AT DESC
+                q.id, 
+                q.slug, 
+                q.title, 
+                q.description,
+                q.created_by,
+                q.is_public,
+                q.language_code,
+                u.name AS creator_name
+            FROM quiz q
+            LEFT JOIN users u ON q.created_by = u.id
+            WHERE q.is_published = 1
+              AND q.is_public = 1
+            ORDER BY q.created_at DESC
         ";
 
         $stmt = $pdo->query($sql);
@@ -45,27 +46,28 @@ try {
 
     $sql = "
         SELECT 
-            Q.ID, 
-            Q.SLUG, 
-            Q.TITLE, 
-            Q.DESCRIPTION,
-            Q.CREATED_BY,
-            Q.IS_PUBLIC,
-            U.NAME AS CREATOR_NAME
-        FROM QUIZ Q
-        LEFT JOIN USERS U ON Q.CREATED_BY = U.ID
-        WHERE Q.IS_PUBLISHED = 1
+            q.id, 
+            q.slug, 
+            q.title, 
+            q.description,
+            q.created_by,
+            q.is_public,
+            q.language_code,
+            u.name AS creator_name
+        FROM quiz q
+        LEFT JOIN users u ON q.created_by = u.id
+        WHERE q.is_published = 1
           AND (
-                Q.IS_PUBLIC = 1
-                OR Q.CREATED_BY = ?
+                q.is_public = 1
+                OR q.created_by = ?
                 OR EXISTS (
                     SELECT 1
-                    FROM QUIZ_VIEWER_EMAIL V
-                    WHERE V.QUIZ_ID = Q.ID
-                      AND V.USER_EMAIL = ?
+                    FROM quiz_viewer_email v
+                    WHERE v.quiz_id = q.id
+                      AND v.user_email = ?
                 )
           )
-        ORDER BY Q.CREATED_AT DESC
+        ORDER BY q.created_at DESC
     ";
 
     $stmt = $pdo->prepare($sql);

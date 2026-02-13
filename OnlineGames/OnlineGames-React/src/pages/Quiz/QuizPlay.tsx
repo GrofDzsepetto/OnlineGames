@@ -15,36 +15,45 @@ const QuizPlay = () => {
 
   const { slug } = useParams();
 
-  useEffect(() => {
-    if (!slug) {
-      setLoading(false);
-      setError("Missing quiz slug in route params");
-      return;
-    }
 
-    setLoading(true);
-    setError(null);
+useEffect(() => {
+  if (!slug) {
+    setLoading(false);
+    setError("Missing quiz slug in route params");
+    return;
+  }
 
-    getQuizQuestions(slug)
-      .then((data) => {
-        setQuestions(data);
-        setCurrent(0);
-        setScore(0);
-      })
-      .catch((err) => {
-        setError(err?.message ?? "Failed to load quiz");
-        setQuestions([]);
-      })
-      .finally(() => setLoading(false));
-  }, [slug]);
+  setLoading(true);
+  setError(null);
+
+  getQuizQuestions(slug)
+    .then((data) => {
+      setQuestions(data);
+      setCurrent(0);
+      setScore(0);
+    })
+    .catch((err) => {
+      setError(err?.message ?? "Failed to load quiz");
+      setQuestions([]);
+    })
+    .finally(() => setLoading(false));
+}, [slug]);
+
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
   if (questions.length === 0) return <div>No questions found for this quiz.</div>;
 
-  if (current >= questions.length) {
-    return <QuizResult score={score} total={questions.length} />;
-  }
+ if (current >= questions.length) {
+  return (
+    <QuizResult
+      score={score}
+      total={questions.length}
+      quizId={slug!}
+    />
+  );
+}
+
 
   const q = questions[current];
 
@@ -52,8 +61,9 @@ const QuizPlay = () => {
     if (correct) setScore((s) => s + 1);
     setCurrent((c) => c + 1);
   };
-
+  console.log("PLAY PARAM:", slug);
   return (
+    
     <div className="quiz-play">
       {/* fejléc: bal felül progress */}
       <div className="quiz-play-header">

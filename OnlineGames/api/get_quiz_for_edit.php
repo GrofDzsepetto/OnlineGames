@@ -2,7 +2,6 @@
 require __DIR__ . "/bootstrap.php";
 require __DIR__ . "/db.php";
 
-
 $DEBUG = true; // <- ha kész, tedd false-ra
 
 $key = $_GET["id"] ?? $_GET["slug"] ?? null;
@@ -22,19 +21,18 @@ if (!isset($_SESSION["user_id"])) {
 $userId = (string)$_SESSION["user_id"];
 
 function db_uuid(PDO $pdo): string {
-    return (string)$pdo->query("SELECT UUID()")->fetchColumn();
+    return (string)$pdo->query("select uuid()")->fetchColumn();
 }
 
 try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
-    // ✅ Quiz meta
     $quizStmt = $pdo->prepare("
-        SELECT ID, SLUG, TITLE, DESCRIPTION, IS_PUBLIC, CREATED_BY
-        FROM QUIZ
-        WHERE ID = ? OR SLUG = ?
-        LIMIT 1
+        select id, slug, title, description, is_public, created_by
+        from quiz
+        where id = ? or slug = ?
+        limit 1
     ");
     $quizStmt->execute([$key, $key]);
     $quiz = $quizStmt->fetch(PDO::FETCH_ASSOC);
@@ -45,30 +43,26 @@ try {
         exit;
     }
 
-    if ((string)$quiz["CREATED_BY"] !== $userId) {
+    if ((string)$quiz["created_by"] !== $userId) {
         http_response_code(403);
         echo json_encode(["error" => "Nincs jogosultságod ehhez a kvízhez."], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    $quizId = (string)$quiz["ID"];
+    $quizId = (string)$quiz["id"];
+    $isPublic = ((int)$quiz["is_public"] === 1);
 
-    // ✅ biztos bool: csak 1 esetén public
-    $isPublic = ((int)$quiz["IS_PUBLIC"] === 1);
-
-    // ✅ Viewer emails (PRIVATE esetén)
     $viewerEmails = [];
     if (!$isPublic) {
         $viewersStmt = $pdo->prepare("
-            SELECT USER_EMAIL
-            FROM QUIZ_VIEWER_EMAIL
-            WHERE QUIZ_ID = ?
-            ORDER BY USER_EMAIL
+            select user_email
+            from quiz_viewer_email
+            where quiz_id = ?
+            order by user_email
         ");
         $viewersStmt->execute([$quizId]);
         $viewerEmails = $viewersStmt->fetchAll(PDO::FETCH_COLUMN);
 
-        // tisztítás (ha volt whitespace / nagybetű)
         $clean = [];
         foreach ($viewerEmails as $e) {
             $e = strtolower(trim((string)$e));
@@ -77,42 +71,41 @@ try {
         $viewerEmails = array_values(array_unique($clean));
     }
 
-    // ✅ Questions
     $questionStmt = $pdo->prepare("
-        SELECT ID, QUESTION_TEXT, TYPE, ORDER_INDEX
-        FROM QUESTION
-        WHERE QUIZ_ID = ?
-        ORDER BY ORDER_INDEX, ID
+        select id, question_text, type, order_index
+        from question
+        where quiz_id = ?
+        order by order_index, id
     ");
     $questionStmt->execute([$quizId]);
     $questionsRows = $questionStmt->fetchAll(PDO::FETCH_ASSOC);
 
     $answerStmt = $pdo->prepare("
-        SELECT LABEL, IS_CORRECT, ORDER_INDEX
-        FROM ANSWER_OPTION
-        WHERE QUESTION_ID = ?
-        ORDER BY ORDER_INDEX, ID
+        select label, is_correct, order_index
+        from answer_option
+        where question_id = ?
+        order by order_index, id
     ");
 
     $pairStmt = $pdo->prepare("
-        SELECT
-            L.TEXT AS LEFT_TEXT,
-            L.ORDER_INDEX AS LEFT_ORDER,
-            R.TEXT AS RIGHT_TEXT,
-            R.ORDER_INDEX AS RIGHT_ORDER
-        FROM MATCHING_PAIR P
-        JOIN MATCHING_LEFT_ITEM L ON L.ID = P.LEFT_ID
-        JOIN MATCHING_RIGHT_ITEM R ON R.ID = P.RIGHT_ID
-        WHERE P.QUESTION_ID = ?
-        ORDER BY L.ORDER_INDEX, R.ORDER_INDEX, P.ID
+        select
+            l.text as left_text,
+            l.order_index as left_order,
+            r.text as right_text,
+            r.order_index as right_order
+        from matching_pair p
+        join matching_left_item l on l.id = p.left_id
+        join matching_right_item r on r.id = p.right_id
+        where p.question_id = ?
+        order by l.order_index, r.order_index, p.id
     ");
 
     $questions = [];
 
     foreach ($questionsRows as $qr) {
-        $qid = (string)$qr["ID"];
-        $type = (string)$qr["TYPE"];
-        $qText = (string)$qr["QUESTION_TEXT"];
+        $qid = (string)$qr["id"];
+        $type = (string)$qr["type"];
+        $qText = (string)$qr["question_text"];
 
         if ($type === "MULTIPLE_CHOICE") {
             $answerStmt->execute([$qid]);
@@ -121,8 +114,8 @@ try {
             $answers = [];
             foreach ($ansRows as $a) {
                 $answers[] = [
-                    "text" => (string)$a["LABEL"],
-                    "isCorrect" => ((int)$a["IS_CORRECT"] === 1),
+                    "text" => (string)$a["label"],
+                    "isCorrect" => ((int)$a["is_correct"] === 1),
                 ];
             }
 
@@ -138,12 +131,11 @@ try {
             $pairStmt->execute([$qid]);
             $rows = $pairStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // LEFT_TEXT -> rights[]
             $byLeft = [];
 
             foreach ($rows as $row) {
-                $leftText = (string)$row["LEFT_TEXT"];
-                $rightText = (string)$row["RIGHT_TEXT"];
+                $leftText = (string)$row["left_text"];
+                $rightText = (string)$row["right_text"];
 
                 if (!isset($byLeft[$leftText])) {
                     $byLeft[$leftText] = [];
@@ -170,22 +162,22 @@ try {
 
     $out = [
         "quiz_id" => $quizId,
-        "slug" => (string)$quiz["SLUG"],
-        "title" => (string)$quiz["TITLE"],
-        "description" => (string)($quiz["DESCRIPTION"] ?? ""),
+        "slug" => (string)$quiz["slug"],
+        "title" => (string)$quiz["title"],
+        "description" => (string)($quiz["description"] ?? ""),
         "isPublic" => $isPublic,
         "viewerEmails" => $viewerEmails,
         "questions" => $questions
     ];
 
     if ($DEBUG) {
-        $out["DEBUG"] = [
-            "KEY" => $key,
-            "USER_ID" => $userId,
-            "IS_PUBLIC_DB_RAW" => $quiz["IS_PUBLIC"],
-            "IS_PUBLIC_BOOL" => $isPublic,
-            "VIEWER_EMAILS_COUNT" => count($viewerEmails),
-            "VIEWER_EMAILS" => $viewerEmails
+        $out["debug"] = [
+            "key" => $key,
+            "user_id" => $userId,
+            "is_public_db_raw" => $quiz["is_public"],
+            "is_public_bool" => $isPublic,
+            "viewer_emails_count" => count($viewerEmails),
+            "viewer_emails" => $viewerEmails
         ];
     }
 

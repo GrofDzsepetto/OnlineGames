@@ -3,39 +3,38 @@
 ========================================================= */
 
 export type ApiAnswer = {
-  ANSWER_TEXT: string;
-  IS_CORRECT: number | string;
+  answer_text: string;
+  is_correct: number | string;
 };
 
 export type ApiGroup = {
-  ID: string;
-  LEFT: string[];
-  RIGHT: string[];
+  id: string;
+  left: string[];
+  right: string[];
 };
 
 export type ApiQuestion = {
-  ID: string;
-  QUESTION_TEXT: string;
-  TYPE: "MULTIPLE_CHOICE" | "MATCHING";
-  ANSWERS?: ApiAnswer[];
-  GROUPS?: ApiGroup[];
+  id: string;
+  question_text: string;
+  type: "MULTIPLE_CHOICE" | "MATCHING";
+  answers?: ApiAnswer[];
+  groups?: ApiGroup[];
 };
 
 export type ApiViewerEmail =
-  | { EMAIL: string }
+  | { email: string }
   | string;
 
 export type ApiQuiz = {
-  ID: string;
-  TITLE: string;
-  DESCRIPTION: string | null;
-  LANGUAGE_CODE?: string;
-  IS_PUBLIC?: number | boolean;
-  VIEWER_EMAILS?: ApiViewerEmail[];
-
-  QUESTIONS: ApiQuestion[];
+  id: string;
+  title: string;
+  description: string | null;
+  language_code?: string;
+  is_public?: number | boolean;
+  viewers_email?: ApiViewerEmail[];
+  questions: ApiQuestion[];
 };
 
 export type ApiQuizResponse = {
-  QUIZ: ApiQuiz;
+  quiz: ApiQuiz;
 };

@@ -7,6 +7,7 @@ export type Quiz = {
   created_by?: string;
   is_public?: boolean;
   viewer_emails?: string;
+  language?: string;
 };
 
 

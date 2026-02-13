@@ -1,0 +1,17 @@
+RewriteEngine On
+
+# API maradjon érintetlen
+RewriteRule ^api/ - [L]
+
+# Ha a fájl vagy mappa létezik, ne bántsuk
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Minden más menjen a React index.html-re
+RewriteRule . /index.html [L]
+
+# ===== DATABASE =====
+SetEnv DB_HOST localhost
+SetEnv DB_NAME dzsepetto_online_quiz
+SetEnv DB_USER dzsepetto_admin
+SetEnv DB_PASS ALMA1234!

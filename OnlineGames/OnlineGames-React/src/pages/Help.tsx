@@ -31,7 +31,21 @@ const Help = () => {
           New games and features are under development. Stay tuned!
         </p>
       </div>
-
+      <div className="helpCard">
+        <h2>⚙️ Open Source</h2>
+        <p>
+          This project is open source and community-driven. You can explore the code,
+          suggest improvements, or contribute new features and games. Together we
+          build and improve the platform. 
+          <a 
+            href="https://github.com/Dzsepetto/OnlineGames" 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+          View on GitHub
+          </a>
+        </p>
+      </div>
       <Button onClick={() => navigate("/")}>
         ← Back to Home
       </Button>

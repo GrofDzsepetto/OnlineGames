@@ -2,7 +2,6 @@
 require __DIR__ . "/bootstrap.php";
 require __DIR__ . "/db.php";
 
-
 $quizId = $_GET["quiz_id"] ?? null;
 
 if (!$quizId) {
@@ -17,17 +16,16 @@ if (!isset($_SESSION["user_id"])) {
     exit;
 }
 
-$userId = (int)$_SESSION["user_id"];
+$userId = (string)$_SESSION["user_id"];
 
 try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // 🔒 Ellenőrizzük, hogy a user láthatja-e a quizt
     $quizStmt = $pdo->prepare("
-        SELECT ID, IS_PUBLIC, CREATED_BY
-        FROM QUIZ
-        WHERE ID = ?
-        LIMIT 1
+        select id, is_public, created_by
+        from quiz
+        where slug = ?
+        limit 1
     ");
     $quizStmt->execute([$quizId]);
     $quiz = $quizStmt->fetch(PDO::FETCH_ASSOC);
@@ -38,28 +36,26 @@ try {
         exit;
     }
 
-    $isOwner = ((string)$quiz["CREATED_BY"] === (string)$userId);
-    $isPublic = ((int)$quiz["IS_PUBLIC"] === 1);
+    $isOwner = ((string)$quiz["created_by"] === $userId);
+    $isPublic = ((int)$quiz["is_public"] === 1);
 
     if (!$isPublic && !$isOwner) {
-        // viewer email check később ide jöhet
         http_response_code(403);
         echo json_encode(["error" => "Nincs jogosultságod az eredményekhez"], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    // 🏆 Leaderboard lekérdezés
     $stmt = $pdo->prepare("
-        SELECT
-            U.ID AS USER_ID,
-            U.NAME AS USER_NAME,
-            QA.SCORE,
-            QA.MAX_SCORE,
-            QA.CREATED_AT
-        FROM QUIZ_ATTEMPT QA
-        JOIN USERS U ON U.ID = QA.USER_ID
-        WHERE QA.QUIZ_ID = ?
-        ORDER BY QA.SCORE DESC, QA.CREATED_AT ASC
+        select
+            u.id as user_id,
+            u.name as user_name,
+            qa.score,
+            qa.max_score,
+            qa.created_at
+        from quiz_attempt qa
+        join users u on u.id = qa.user_id
+        where qa.quiz_id = ?
+        order by qa.score desc, qa.created_at asc
     ");
     $stmt->execute([$quizId]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);

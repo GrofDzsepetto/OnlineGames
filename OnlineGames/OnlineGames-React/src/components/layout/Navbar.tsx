@@ -49,7 +49,6 @@ const Navbar = () => {
         {user ? (
           <div className="auth-info">
             <span>
-              {t("nav.loggedInAs")}{" "}
               <strong>{user.name || user.email}</strong>
             </span>
             <button className="logout-btn" onClick={handleLogout}>

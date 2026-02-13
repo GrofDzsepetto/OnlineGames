@@ -8,7 +8,7 @@ import Login from "../pages/Login";
 import CreateQuiz from "../pages/Quiz/CreateQuiz";
 import EditQuiz from "../pages/Quiz/EditQuiz";
 import Help from "../pages/Help";
-
+import QuizInfo from "../components/quiz/QuizInfo";
 
 export const router = createBrowserRouter([
   {
@@ -16,13 +16,16 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <Home /> },
       { path: "/quizzes", element: <QuizList /> },
-      { path: "/quiz/:slug", element: <QuizPlay /> },
+      { path: "/quiz/:slug", element: <QuizInfo /> },
+      { path: "/play/:slug", element: <QuizPlay /> },
+
       { path: "/login", element: <Login /> },
-      { path: "/create-quiz", element: <CreateQuiz /> }, 
-      { path:"/edit-quiz/:id", element: <EditQuiz />},
-      { path:"/help", element: <Help />} 
+      { path: "/create-quiz", element: <CreateQuiz /> },
+      { path: "/edit-quiz/:id", element: <EditQuiz /> },
+      { path: "/help", element: <Help /> }
     ],
   },
   { path: "*", element: <NotFound /> },
 ]);
+
  
