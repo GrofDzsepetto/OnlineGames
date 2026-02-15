@@ -13,47 +13,45 @@ const QuizPlay = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { slug } = useParams();
+  const { slug } = useParams<{ slug: string }>();
 
+  useEffect(() => {
+    if (!slug) {
+      setLoading(false);
+      setError("Missing quiz slug in route params");
+      return;
+    }
 
-useEffect(() => {
-  if (!slug) {
-    setLoading(false);
-    setError("Missing quiz slug in route params");
-    return;
-  }
+    setLoading(true);
+    setError(null);
 
-  setLoading(true);
-  setError(null);
-
-  getQuizQuestions(slug)
-    .then((data) => {
-      setQuestions(data);
-      setCurrent(0);
-      setScore(0);
-    })
-    .catch((err) => {
-      setError(err?.message ?? "Failed to load quiz");
-      setQuestions([]);
-    })
-    .finally(() => setLoading(false));
-}, [slug]);
-
+    getQuizQuestions(slug)
+      .then((data) => {
+        setQuestions(data);
+        setCurrent(0);
+        setScore(0);
+      })
+      .catch((err) => {
+        setError(err?.message ?? "Failed to load quiz");
+        setQuestions([]);
+      })
+      .finally(() => setLoading(false));
+  }, [slug]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
-  if (questions.length === 0) return <div>No questions found for this quiz.</div>;
+  if (questions.length === 0)
+    return <div>No questions found for this quiz.</div>;
 
- if (current >= questions.length) {
-  return (
-    <QuizResult
-      score={score}
-      total={questions.length}
-      quizSlug={slug!}
-    />
-  );
-}
-
+  if (current >= questions.length) {
+    return (
+      <QuizResult
+        score={score}
+        total={questions.length}
+        quizSlug={slug!}
+      />
+    );
+  }
 
   const q = questions[current];
 
@@ -61,23 +59,19 @@ useEffect(() => {
     if (correct) setScore((s) => s + 1);
     setCurrent((c) => c + 1);
   };
-  console.log("PLAY PARAM:", slug);
+
   return (
-    
     <div className="quiz-play">
-      {/* fejléc: bal felül progress */}
       <div className="quiz-play-header">
         <div className="quiz-progress">
           Kérdés: {current + 1} / {questions.length}
         </div>
 
-        {/* opcionális: jobb felül pontszám */}
         <div className="quiz-score">
           Pont: {score}
         </div>
       </div>
 
-      {/* kérdés UI */}
       {q.type === "MATCHING" ? (
         <QuizMatchingQuestion question={q} onAnswer={handleAnswered} />
       ) : (

@@ -31,7 +31,6 @@ if (!$quizSlug || !is_numeric($score) || !is_numeric($maxScore)) {
     exit;
 }
 
-
 $score    = (int)$score;
 $maxScore = (int)$maxScore;
 
@@ -45,15 +44,28 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
+    // 🔎 1️⃣ slug → quiz.id lekérés
+    $stmt = $pdo->prepare("SELECT id FROM quiz WHERE slug = ?");
+    $stmt->execute([$quizSlug]);
+    $quizId = $stmt->fetchColumn();
+
+    if (!$quizId) {
+        http_response_code(400);
+        echo json_encode(["error" => "Quiz not found"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // 💾 2️⃣ insert / update már quiz.id-vel
     $stmt = $pdo->prepare("
         INSERT INTO quiz_attempt (
-            quiz_slug,
+            id,
+            quiz_id,
             user_id,
             score,
             max_score,
             created_at
         ) VALUES (
-            ?, ?, ?, ?, NOW()
+            UUID(), ?, ?, ?, ?, NOW()
         )
         ON DUPLICATE KEY UPDATE
             score = IF(VALUES(score) > score, VALUES(score), score),
@@ -62,7 +74,7 @@ try {
     ");
 
     $stmt->execute([
-        $quizSlug,
+        $quizId,   // ⚠️ FONTOS: itt már ID megy be
         $userId,
         $score,
         $maxScore
@@ -70,19 +82,26 @@ try {
 
     echo json_encode([
         "success"   => true,
-        "quiz_slug"   => $quizSlug,
+        "quiz_id"   => $quizId,
         "user_id"   => $userId,
         "score"     => $score,
         "max_score" => $maxScore
     ], JSON_UNESCAPED_UNICODE);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
 
-    error_log("Quiz attempt error: " . $e->getMessage());
+    error_log("==== QUIZ ATTEMPT ERROR ====");
+    error_log("Message: " . $e->getMessage());
+    error_log("File: " . $e->getFile());
+    error_log("Line: " . $e->getLine());
+    error_log("Code: " . $e->getCode());
+    error_log("Trace: " . $e->getTraceAsString());
 
     http_response_code(500);
+
     echo json_encode([
-        "error" => "Database error"
+        "error" => $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
+
     exit;
 }

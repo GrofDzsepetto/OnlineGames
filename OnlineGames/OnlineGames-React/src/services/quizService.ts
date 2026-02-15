@@ -356,15 +356,17 @@ export async function saveQuizResult(payload: {
   try {
     json = JSON.parse(raw);
   } catch {
-    throw new Error("Invalid JSON from upsert_quiz_attempt.php:\n" + raw.slice(0, 300));
+    throw new Error(
+      "Invalid JSON from upsert_quiz_attempt.php:\n" +
+        raw.slice(0, 300)
+    );
   }
 
- if (!res.ok) {
-  throw new Error(
-    json?.details || json?.error || `HTTP ${res.status}`
-  );
-}
-
+  if (!res.ok) {
+    throw new Error(
+      json?.details || json?.error || `HTTP ${res.status}`
+    );
+  }
 
   return json;
 }

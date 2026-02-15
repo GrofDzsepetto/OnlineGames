@@ -2,6 +2,8 @@
 require __DIR__ . "/bootstrap.php";
 require __DIR__ . "/db.php";
 
+header("Content-Type: application/json; charset=UTF-8");
+
 $slug = $_GET["slug"] ?? null;
 
 if (!$slug) {
@@ -37,6 +39,7 @@ try {
         exit;
     }
 
+    $quizId = $quiz["id"];
     $isOwner = ((string)$quiz["created_by"] === $userId);
     $isPublic = ((int)$quiz["is_public"] === 1);
 
@@ -46,7 +49,7 @@ try {
         exit;
     }
 
-    // 2️⃣ Leaderboard lekérés SLUG alapján
+    // 2️⃣ Leaderboard lekérés már quiz_id alapján
     $stmt = $pdo->prepare("
         SELECT
             u.id AS USER_ID,
@@ -56,10 +59,10 @@ try {
             qa.created_at AS CREATED_AT
         FROM quiz_attempt qa
         JOIN users u ON u.id = qa.user_id
-        WHERE qa.quiz_slug = ?
+        WHERE qa.quiz_id = ?
         ORDER BY qa.score DESC, qa.created_at ASC
     ");
-    $stmt->execute([$slug]);
+    $stmt->execute([$quizId]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([

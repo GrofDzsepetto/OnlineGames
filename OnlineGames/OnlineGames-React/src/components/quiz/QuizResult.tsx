@@ -14,15 +14,19 @@ const QuizResult = ({
   const [saveStatus, setSaveStatus] = useState<
     "idle" | "saving" | "success" | "error"
   >("idle");
-  const {user} = useAuth();
+
+  const { user } = useAuth();
+
   useEffect(() => {
-    if(!user) return;
+    if (!user) return;
     if (saveStatus !== "idle") return;
+
     setSaveStatus("saving");
+
     console.log("SAVE PAYLOAD:", {
       quizSlug,
       score,
-      total
+      total,
     });
 
     saveQuizResult({
@@ -37,7 +41,7 @@ const QuizResult = ({
         console.error("Save result failed:", err);
         setSaveStatus("error");
       });
-  }, [quizSlug, score, total, saveStatus]);
+  }, [quizSlug, score, total, saveStatus, user]);
 
   return (
     <div>
@@ -46,8 +50,16 @@ const QuizResult = ({
       </h2>
 
       {saveStatus === "saving" && <p>Saving result...</p>}
-      {saveStatus === "success" && <p style={{ color: "green" }}>Result saved successfully ✓</p>}
-      {saveStatus === "error" && <p style={{ color: "red" }}>Failed to save result</p>}
+      {saveStatus === "success" && (
+        <p style={{ color: "green" }}>
+          Result saved successfully ✓
+        </p>
+      )}
+      {saveStatus === "error" && (
+        <p style={{ color: "red" }}>
+          Failed to save result
+        </p>
+      )}
     </div>
   );
 };
