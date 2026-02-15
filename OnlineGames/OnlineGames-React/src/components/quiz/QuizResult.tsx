@@ -1,26 +1,32 @@
 import { useEffect, useState } from "react";
 import { saveQuizResult } from "../../services/quizService";
+import { useAuth } from "../../auth/AuthContext";
 
 const QuizResult = ({
   score,
   total,
-  quizId,
+  quizSlug,
 }: {
   score: number;
   total: number;
-  quizId: string;
+  quizSlug: string;
 }) => {
   const [saveStatus, setSaveStatus] = useState<
     "idle" | "saving" | "success" | "error"
   >("idle");
-
+  const {user} = useAuth();
   useEffect(() => {
-    if (saveStatus !== "idle") return; // 🔒 csak egyszer fusson
-
+    if(!user) return;
+    if (saveStatus !== "idle") return;
     setSaveStatus("saving");
+    console.log("SAVE PAYLOAD:", {
+      quizSlug,
+      score,
+      total
+    });
 
     saveQuizResult({
-      quiz_id: quizId,
+      quiz_slug: quizSlug,
       score,
       max_score: total,
     })
@@ -31,7 +37,7 @@ const QuizResult = ({
         console.error("Save result failed:", err);
         setSaveStatus("error");
       });
-  }, [quizId, score, total, saveStatus]);
+  }, [quizSlug, score, total, saveStatus]);
 
   return (
     <div>

@@ -60,6 +60,7 @@ const QuizList = () => {
 
   return (
     <div>
+      {/* ================= HEADER ================= */}
       <div className="quizlist-header">
         <div className="quizlist-left">
           <select
@@ -93,59 +94,81 @@ const QuizList = () => {
         </div>
       </div>
 
+      {/* ================= QUIZ LIST ================= */}
       {filteredQuizzes.length > 0 ? (
-        filteredQuizzes.map((quiz) => (
-          <div key={quiz.id} className="quiz-wrapper">
+        filteredQuizzes.map((quiz) => {
+          const isOwner =
+            user &&
+            quiz.created_by?.toString() === user.id;
 
-            {/* ACTION BUTTONS */}
+          // DEBUG LOG
+          console.log("---- QUIZ DEBUG ----");
+          console.log("quiz.id:", quiz.id);
+          console.log(
+            "quiz.created_by:",
+            quiz.created_by,
+            typeof quiz.created_by
+          );
+          console.log(
+            "user.id:",
+            user?.id,
+            typeof user?.id
+          );
+          console.log("IS OWNER:", isOwner);
+
+          return (
             <div
-              style={{
-                position: "absolute",
-                top: "12px",
-                right: "12px",
-                display: "flex",
-                gap: "8px",
-                zIndex: 50
-              }}
+              key={quiz.id}
+              className="quiz-wrapper"
             >
-              <button
-                className="settings-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/edit-quiz/${quiz.id}`);
-                }}
+              {isOwner && (
+                <div className="quiz-actions">
+                  <button
+                    className="settings-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(
+                        `/edit-quiz/${quiz.id}`
+                      );
+                    }}
+                  >
+                    ✏
+                  </button>
+
+                  <button
+                    className="delete-btn"
+                    disabled={
+                      deletingId === quiz.id
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(quiz);
+                    }}
+                  >
+                    {deletingId === quiz.id
+                      ? "..."
+                      : "🗑"}
+                  </button>
+                </div>
+              )}
+
+              <div
+                onClick={() =>
+                  navigate(`/quiz/${quiz.slug}`)
+                }
+                style={{ cursor: "pointer" }}
               >
-                ✏
-              </button>
+                <QuizCard quiz={quiz} />
+              </div>
 
-              <button
-                className="delete-btn"
-                disabled={deletingId === quiz.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(quiz);
-                }}
-              >
-                {deletingId === quiz.id ? "..." : "🗑"}
-              </button>
+              {quiz.creator_name && (
+                <span className="creator-name">
+                  Created by: {quiz.creator_name}
+                </span>
+              )}
             </div>
-
-            <div
-              onClick={() =>
-                navigate(`/quiz/${quiz.slug}`)
-              }
-              style={{ cursor: "pointer" }}
-            >
-              <QuizCard quiz={quiz} />
-            </div>
-
-            {quiz.creator_name && (
-              <span className="creator-name">
-                Created by: {quiz.creator_name}
-              </span>
-            )}
-          </div>
-        ))
+          );
+        })
       ) : (
         <p>No quizzes available.</p>
       )}

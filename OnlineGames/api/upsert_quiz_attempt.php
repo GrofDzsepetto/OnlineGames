@@ -21,15 +21,16 @@ if (json_last_error() !== JSON_ERROR_NONE) {
     exit;
 }
 
-$quizId   = $data["quiz_id"] ?? null;
+$quizSlug = $data["quiz_slug"] ?? null;
 $score    = $data["score"] ?? null;
 $maxScore = $data["max_score"] ?? null;
 
-if (!$quizId || !is_numeric($score) || !is_numeric($maxScore)) {
+if (!$quizSlug || !is_numeric($score) || !is_numeric($maxScore)) {
     http_response_code(400);
     echo json_encode(["error" => "Missing or invalid fields"], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
 
 $score    = (int)$score;
 $maxScore = (int)$maxScore;
@@ -46,7 +47,7 @@ try {
 
     $stmt = $pdo->prepare("
         INSERT INTO quiz_attempt (
-            quiz_id,
+            quiz_slug,
             user_id,
             score,
             max_score,
@@ -61,7 +62,7 @@ try {
     ");
 
     $stmt->execute([
-        $quizId,
+        $quizSlug,
         $userId,
         $score,
         $maxScore
@@ -69,7 +70,7 @@ try {
 
     echo json_encode([
         "success"   => true,
-        "quiz_id"   => $quizId,
+        "quiz_slug"   => $quizSlug,
         "user_id"   => $userId,
         "score"     => $score,
         "max_score" => $maxScore

@@ -27,13 +27,17 @@ export type ApiViewerEmail =
 
 export type ApiQuiz = {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
+  created_by: string;
+  creator_name?: string;
   language_code?: string;
   is_public?: number | boolean;
   viewers_email?: ApiViewerEmail[];
-  questions: ApiQuestion[];
+  questions?: ApiQuestion[];
 };
+
 
 export type ApiQuizResponse = {
   quiz: ApiQuiz;

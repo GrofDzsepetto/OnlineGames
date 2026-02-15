@@ -4,12 +4,10 @@ export type Quiz = {
   title: string;
   description: string | null;
   creator_name?: string;
-  created_by?: string;
-  is_public?: boolean;
-  viewer_emails?: string;
-  language?: string;
+  created_by: string;
+  is_public: boolean;
+  language: string;
 };
-
 
 export type QuizAnswer = {
   text: string;

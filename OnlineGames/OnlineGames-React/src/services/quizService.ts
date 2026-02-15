@@ -46,21 +46,21 @@ export async function getQuizzes(): Promise<Quiz[]> {
   const raw = await res.text();
   const data = JSON.parse(raw);
 
-  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+  if (!res.ok)
+    throw new Error(data?.error || `HTTP ${res.status}`);
 
   return (data ?? []).map((q: any) => ({
-  id: String(q.id ?? q.id),
-  slug: q.SLUG ?? q.slug,
-  title: q.TITLE ?? q.title,
-  description: q.DESCRIPTION ?? q.description ?? null,
-  creator_name: q.CREATOR_NAME ?? q.creator_name,
-  created_by:
-    q.CREATED_BY != null ? String(q.CREATED_BY) : undefined,
-  language:
-    (q.LANGUAGE_CODE ?? q.language ?? "hu").toLowerCase(),
+    id: String(q.id),
+    slug: q.slug,
+    title: q.title,
+    description: q.description ?? null,
+    creator_name: q.creator_name ?? undefined,
+    created_by: String(q.created_by),
+    language: (q.language_code ?? "hu").toLowerCase(),
+    is_public: Boolean(q.is_public),
   }));
-
 }
+
 
 /* -------------------------------------------------------
    GET QUESTIONS (PLAY)
@@ -196,8 +196,6 @@ export async function getQuizForEdit(
   };
 }
 
-
-
 /* -------------------------------------------------------
    CREATE
 ------------------------------------------------------- */
@@ -321,10 +319,11 @@ export async function getQuizMeta(slug: string) {
 
 
 
-export async function getQuizResults(quizId: string) {
-  const res = await fetch(`${API_BASE}/get_results.php?quiz_id=${encodeURIComponent(quizId)}`, {
-    credentials: "include",
-  });
+export async function getQuizResults(slug: string){
+  const res = await fetch(
+    `${API_BASE}/get_results.php?slug=${encodeURIComponent(slug)}`,
+    { credentials: "include" }
+  );
 
   const json = await res.json().catch(() => null);
 
@@ -333,14 +332,14 @@ export async function getQuizResults(quizId: string) {
   }
 
   return {
-    quiz_id: String(json.quiz_id ?? quizId),
+    slug,
     results: Array.isArray(json.results) ? json.results : [],
   };
 }
 
 
 export async function saveQuizResult(payload: {
-  quiz_id: string;
+  quiz_slug: string;
   score: number;
   max_score: number;
 }) {

@@ -49,7 +49,7 @@ useEffect(() => {
     <QuizResult
       score={score}
       total={questions.length}
-      quizId={slug!}
+      quizSlug={slug!}
     />
   );
 }

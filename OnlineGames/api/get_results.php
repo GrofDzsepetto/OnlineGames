@@ -2,11 +2,11 @@
 require __DIR__ . "/bootstrap.php";
 require __DIR__ . "/db.php";
 
-$quizId = $_GET["quiz_id"] ?? null;
+$slug = $_GET["slug"] ?? null;
 
-if (!$quizId) {
+if (!$slug) {
     http_response_code(400);
-    echo json_encode(["error" => "Missing quiz_id"], JSON_UNESCAPED_UNICODE);
+    echo json_encode(["error" => "Missing slug"], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -21,13 +21,14 @@ $userId = (string)$_SESSION["user_id"];
 try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+    // 1️⃣ Slug alapján quiz lekérés
     $quizStmt = $pdo->prepare("
-        select id, is_public, created_by
-        from quiz
-        where slug = ?
-        limit 1
+        SELECT id, is_public, created_by
+        FROM quiz
+        WHERE slug = ?
+        LIMIT 1
     ");
-    $quizStmt->execute([$quizId]);
+    $quizStmt->execute([$slug]);
     $quiz = $quizStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$quiz) {
@@ -45,23 +46,24 @@ try {
         exit;
     }
 
+    // 2️⃣ Leaderboard lekérés SLUG alapján
     $stmt = $pdo->prepare("
-        select
-            u.id as user_id,
-            u.name as user_name,
-            qa.score,
-            qa.max_score,
-            qa.created_at
-        from quiz_attempt qa
-        join users u on u.id = qa.user_id
-        where qa.quiz_id = ?
-        order by qa.score desc, qa.created_at asc
+        SELECT
+            u.id AS USER_ID,
+            u.name AS USER_NAME,
+            qa.score AS SCORE,
+            qa.max_score AS MAX_SCORE,
+            qa.created_at AS CREATED_AT
+        FROM quiz_attempt qa
+        JOIN users u ON u.id = qa.user_id
+        WHERE qa.quiz_slug = ?
+        ORDER BY qa.score DESC, qa.created_at ASC
     ");
-    $stmt->execute([$quizId]);
+    $stmt->execute([$slug]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
-        "quiz_id" => $quizId,
+        "slug" => $slug,
         "results" => $rows
     ], JSON_UNESCAPED_UNICODE);
 

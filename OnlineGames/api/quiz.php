@@ -37,6 +37,9 @@ $createdBy = $quiz["created_by"];
 /* -------------------------------------------------------
    JOGOSULTSÁG
 ------------------------------------------------------- */
+/* -------------------------------------------------------
+   JOGOSULTSÁG
+------------------------------------------------------- */
 
 $isCreator = false;
 $viewerEmails = [];
@@ -45,44 +48,52 @@ if (!$isPublic) {
 
     if (!isset($_SESSION["user_id"])) {
         http_response_code(401);
-        echo json_encode(["error" => "Bejelentkezés szükséges!"], JSON_UNESCAPED_UNICODE);
+        echo json_encode(
+            ["error" => "Bejelentkezés szükséges ehhez a kvízhez."],
+            JSON_UNESCAPED_UNICODE
+        );
         exit;
     }
 
     $userId = (int)$_SESSION["user_id"];
-    $isCreator = ($userId === $createdBy);
-
-    $emailStmt = $pdo->prepare("
-        SELECT email
-        FROM users
-        WHERE id = ?
-        LIMIT 1
-    ");
-    $emailStmt->execute([$userId]);
-    $userEmail = $emailStmt->fetchColumn();
-
-    if (!$userEmail) {
-        http_response_code(403);
-        echo json_encode(["error" => "Nem sikerült azonosítani a felhasználót."], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    $userEmail = strtolower(trim($userEmail));
+    $isCreator = ($userId === (int)$createdBy);
 
     if (!$isCreator) {
+        $emailStmt = $pdo->prepare("
+            SELECT email
+            FROM users
+            WHERE id = ?
+            LIMIT 1
+        ");
+        $emailStmt->execute([$userId]);
+        $userEmail = $emailStmt->fetchColumn();
+
+        if (!$userEmail) {
+            http_response_code(403);
+            echo json_encode(
+                ["error" => "Nem sikerült azonosítani a felhasználót."],
+                JSON_UNESCAPED_UNICODE
+            );
+            exit;
+        }
+
+        $userEmail = strtolower(trim($userEmail));
+
         $allowStmt = $pdo->prepare("
             SELECT 1
             FROM quiz_viewer_email
             WHERE quiz_id = ?
-            AND user_email = ?
+            AND LOWER(user_email) = ?
             LIMIT 1
         ");
         $allowStmt->execute([$quizId, $userEmail]);
-        $allowed = $allowStmt->fetchColumn();
 
-        if (!$allowed) {
+        if (!$allowStmt->fetchColumn()) {
             http_response_code(403);
-            echo json_encode(["error" => "Nincs jogosultságod ehhez a kvízhez."], JSON_UNESCAPED_UNICODE);
+            echo json_encode(
+                ["error" => "Nincs jogosultságod ehhez a kvízhez."],
+                JSON_UNESCAPED_UNICODE
+            );
             exit;
         }
     }

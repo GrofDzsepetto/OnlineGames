@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getQuizMeta, getQuizResults } from "../../services/quizService";
+import { useAuth } from "../../auth/AuthContext";
 
 type QuizMeta = {
   id: string;
@@ -28,49 +29,35 @@ const QuizInfo = () => {
 
   const [results, setResults] = useState<QuizResultRow[]>([]);
   const [resultsLoading, setResultsLoading] = useState(false);
-  const [resultsError, setResultsError] = useState<string | null>(null);
+  const {user} = useAuth();
 
-  useEffect(() => {
-    if (!slug) {
-      setError("Missing quiz slug");
+useEffect(() => {
+  if (!slug) return;
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const meta = await getQuizMeta(slug);
+      setQuiz(meta);
+
+      if (user) {
+        setResultsLoading(true);
+        const r = await getQuizResults(slug);
+        setResults(r.results ?? []);
+      }
+
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to load quiz");
+    } finally {
       setLoading(false);
-      return;
+      setResultsLoading(false);
     }
+  };
 
-    setLoading(true);
-    setError(null);
+  load();
+}, [slug, user]);
 
-    getQuizMeta(slug)
-      .then(async (meta) => {
 
-        console.log("META RAW:", meta);
-
-        setQuiz(meta);
-
-        if (meta?.id) {
-          setResultsLoading(true);
-          setResultsError(null);
-
-          try {
-            if (slug) {
-                const r = await getQuizResults(slug);
-                console.log("RESULT RAW:", r); 
-              
-
-            setResults((r.results ?? []) as QuizResultRow[]);
-            }
-          } catch (e: any) {
-            setResults([]);
-            setResultsError(e?.message ?? "Failed to load results");
-          } finally {
-            setResultsLoading(false);
-          }
-          
-        }
-      })
-      .catch((e) => setError(e?.message ?? "Failed to load quiz"))
-      .finally(() => setLoading(false));
-  }, [slug]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
@@ -105,50 +92,70 @@ const QuizInfo = () => {
       </button>
 
       {/* ✅ Leaderboard */}
-      <div style={{ marginTop: 40, textAlign: "left" }}>
-        <h2 style={{ textAlign: "center" }}>🏆 Leaderboard</h2>
+     {/* ✅ Leaderboard */}
+    <div style={{ marginTop: 40, textAlign: "left" }}>
+      <h2 style={{ textAlign: "center" }}>🏆 Leaderboard</h2>
 
-        {resultsLoading && <div style={{ textAlign: "center" }}>Loading results...</div>}
+      {!user && (
+        <div style={{ textAlign: "center", marginTop: 20 }}>
+          Jelentkezz be az eredmények megtekintéséhez.
+        </div>
+      )}
 
-        {resultsError && (
-          <div style={{ textAlign: "center", color: "crimson" }}>{resultsError}</div>
-        )}
+      {user && (
+        <>
+          {resultsLoading && (
+            <div style={{ textAlign: "center" }}>Loading results...</div>
+          )}
 
-        {!resultsLoading && !resultsError && results.length === 0 && (
-          <div style={{ textAlign: "center", opacity: 0.8 }}>
-            Még nincs eredmény ehhez a kvízhez.
-          </div>
-        )}
+          {!resultsLoading && results.length === 0 && (
+            <div style={{ textAlign: "center", opacity: 0.8 }}>
+              Még nincs eredmény ehhez a kvízhez.
+            </div>
+          )}
 
-        {!resultsLoading && !resultsError && results.length > 0 && (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 14 }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #ddd" }}>#</th>
-                  <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #ddd" }}>User</th>
-                  <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #ddd" }}>Score</th>
-                  <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #ddd" }}>When</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.slice(0, 10).map((r, idx) => (
-                  <tr key={`${r.USER_ID}-${idx}`}>
-                    <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>{idx + 1}</td>
-                    <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>{r.USER_NAME}</td>
-                    <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>
-                      {r.SCORE} / {r.MAX_SCORE}
-                    </td>
-                    <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>
-                      {r.CREATED_AT}
-                    </td>
+          {!resultsLoading && results.length > 0 && (
+            <div style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  marginTop: 14,
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #ddd" }}>#</th>
+                    <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #ddd" }}>User</th>
+                    <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #ddd" }}>Score</th>
+                    <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #ddd" }}>When</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {results.slice(0, 10).map((r, idx) => (
+                    <tr key={`${r.USER_ID}-${idx}`}>
+                      <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>
+                        {idx + 1}
+                      </td>
+                      <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>
+                        {r.USER_NAME}
+                      </td>
+                      <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>
+                        {r.SCORE} / {r.MAX_SCORE}
+                      </td>
+                      <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>
+                        {r.CREATED_AT}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+
     </div>
   );
 };
