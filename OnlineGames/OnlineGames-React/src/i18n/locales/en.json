@@ -6,14 +6,22 @@
   },
   "help": {
     "title": "Help",
-    "about": "Mini Games is a collection of small interactive games.",
+    "whatIsTitle": "What is Mini Games?",
+    "whatIsText": "Mini Games is a collection of small interactive games designed to help you learn and have fun at the same time.",
+    "quizTitle": "Quizzes",
+    "quizText": "Test your knowledge with different types of quizzes. Each quiz gives instant feedback and a final score.",
+    "comingTitle": "Coming Soon",
+    "comingText": "New games and features are under development. Stay tuned!",
+    "openSourceTitle": "Open Source",
+    "openSourceText": "This project is open source and community-driven. You can explore the code, suggest improvements, or contribute new features and games. Together we build and improve the platform.",
+    "github": "View on GitHub",
     "back": "Back to Home"
   },
   "nav":{
     "home" : "Home",
     "quizzes" : "Quizzes",
-    "help" : "help", 
-    "login" : "login",
-    "logout" : "logout"
+    "help" : "Help", 
+    "login" : "Login",
+    "logout" : "Logout"
   }
 }

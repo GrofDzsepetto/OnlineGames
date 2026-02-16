@@ -1,0 +1,57 @@
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(6px);
+}
+
+.countdown-modal {
+  background: #111827;
+  padding: 3rem 4rem;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: popIn 0.3s ease-out;
+}
+
+.countdown-title {
+  color: #9ca3af;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.countdown-number {
+  font-size: 4rem;
+  font-weight: 700;
+  color: #ffffff;
+  animation: pulse 1s infinite;
+}
+
+.countdown-go {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}

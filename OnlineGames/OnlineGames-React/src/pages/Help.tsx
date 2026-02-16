@@ -1,53 +1,47 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Button from "../components/ui/Button";
 import "../styles/help.css";
 
 const Help = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="helpLayout">
-      <h1 className="helpTitle">❓ Help</h1>
+      <h1 className="helpTitle">❓ {t("help.title")}</h1>
 
       <div className="helpCard">
-        <h2>🎯 What is Mini Games?</h2>
-        <p>
-          Mini Games is a collection of small interactive games designed to
-          help you learn and have fun at the same time.
-        </p>
+        <h2>🎯 {t("help.whatIsTitle")}</h2>
+        <p>{t("help.whatIsText")}</p>
       </div>
 
       <div className="helpCard">
-        <h2>🧠 Quizzes</h2>
-        <p>
-          Test your knowledge with different types of quizzes. Each quiz gives
-          instant feedback and a final score.
-        </p>
+        <h2>🧠 {t("help.quizTitle")}</h2>
+        <p>{t("help.quizText")}</p>
       </div>
 
       <div className="helpCard">
-        <h2>🚧 Coming Soon</h2>
-        <p>
-          New games and features are under development. Stay tuned!
-        </p>
+        <h2>🚧 {t("help.comingTitle")}</h2>
+        <p>{t("help.comingText")}</p>
       </div>
+
       <div className="helpCard">
-        <h2>⚙️ Open Source</h2>
+        <h2>⚙️ {t("help.openSourceTitle")}</h2>
         <p>
-          This project is open source and community-driven. You can explore the code,
-          suggest improvements, or contribute new features and games. Together we
-          build and improve the platform. 
-          <a 
-            href="https://github.com/Dzsepetto/OnlineGames" 
-            target="_blank" 
+          {t("help.openSourceText")}{" "}
+          <a
+            href="https://github.com/Dzsepetto/OnlineGames"
+            target="_blank"
             rel="noopener noreferrer"
           >
-          View on GitHub
+            {t("help.github")}
           </a>
         </p>
       </div>
+
       <Button onClick={() => navigate("/")}>
-        ← Back to Home
+        ← {t("help.back")}
       </Button>
     </div>
   );

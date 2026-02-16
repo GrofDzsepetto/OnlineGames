@@ -4,11 +4,19 @@
     "quizzes": "Kvízek",
     "comingSoon": "Hamarosan..."
   },
-  "help": {
-    "title": "Súgó",
-    "about": "A Mini Games egy kis interaktív játékgyűjtemény.",
-    "back": "Vissza a főoldalra"
-  },
+"help": {
+  "title": "Súgó",
+  "whatIsTitle": "Mi az a Mini Games?",
+  "whatIsText": "A Mini Games egy kisebb interaktív játékokból álló gyűjtemény, amely segít tanulni és közben szórakozni.",
+  "quizTitle": "Kvízek",
+  "quizText": "Teszteld a tudásodat különböző típusú kvízekkel. Minden kvíz azonnali visszajelzést és végső pontszámot ad.",
+  "comingTitle": "Hamarosan",
+  "comingText": "Új játékok és funkciók fejlesztés alatt állnak. Maradj velünk!",
+  "openSourceTitle": "Nyílt forráskód",
+  "openSourceText": "Ez a projekt nyílt forráskódú és közösség által vezérelt. Felfedezheted a kódot, javaslatokat tehetsz, vagy hozzájárulhatsz új funkciókkal és játékokkal. Együtt építjük és fejlesztjük a platformot.",
+  "github": "Megtekintés GitHubon",
+  "back": "Vissza a főoldalra"
+},
   "nav":{
     "home" : "Home",
     "quizzes" : "Kvizek",
