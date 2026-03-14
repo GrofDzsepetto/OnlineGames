@@ -14,7 +14,17 @@ type Props = {
   setQuestions: React.Dispatch<React.SetStateAction<EditableQuestion[]>>;
 };
 
+
 const QuestionEditor = ({ questions, setQuestions }: Props) => {
+  const updateQuestion = (
+  qIdx: number,
+  updater: (q: EditableQuestion) => EditableQuestion
+) => {
+  setQuestions((prev) =>
+    prev.map((q, i) => (i === qIdx ? updater(q) : q))
+  );
+};
+  
   const addQuestion = () => {
     setQuestions((prev) => [
       ...prev,
@@ -34,17 +44,16 @@ const QuestionEditor = ({ questions, setQuestions }: Props) => {
     setQuestions((prev) => prev.filter((_, i) => i !== qIdx));
   };
 
-  const handleField = (
-    qIdx: number,
-    field: keyof EditableQuestion,
-    value: any
-  ) => {
-    setQuestions((prev) => {
-      const updated = [...prev];
-      updated[qIdx] = { ...updated[qIdx], [field]: value };
-      return updated;
-    });
-  };
+const handleField = (
+  qIdx: number,
+  field: keyof EditableQuestion,
+  value: any
+) => {
+  updateQuestion(qIdx, (q) => ({
+    ...q,
+    [field]: value,
+  }));
+};
 
   const setType = (qIdx: number, newType: QuestionType) => {
     setQuestions((prev) => {
@@ -171,103 +180,100 @@ const QuestionEditor = ({ questions, setQuestions }: Props) => {
           )}
 
           {/* ================= MATCHING ================= */}
-          {q.type === "MATCHING" && (
-            <div className="cq-body cq-body--matching">
-              {q.pairs.map((pair, pIdx) => (
-                <div key={pIdx} className="cq-pair">
-                  <div className="cq-row">
-                    <input
-                      className="cq-input"
-                      placeholder="Bal oldal"
-                      value={pair.left}
-                      onChange={(e) => {
-                        const nextPairs = [...q.pairs];
-                        nextPairs[pIdx] = {
-                          ...nextPairs[pIdx],
-                          left: e.target.value,
-                        };
-                        handleField(qIdx, "pairs", nextPairs);
-                      }}
-                    />
+{q.type === "MATCHING" && (
+  <div className="cq-body cq-body--matching">
+    {q.pairs.map((pair, pIdx) => (
+      <div key={pIdx} className="cq-pair">
 
-                    <button
-                      className="cq-btn cq-btn--outlineDanger"
-                      onClick={() => {
-                        const nextPairs = q.pairs.filter(
-                          (_, i) => i !== pIdx
-                        );
-                        handleField(
-                          qIdx,
-                          "pairs",
-                          nextPairs.length
-                            ? nextPairs
-                            : [{ left: "", rights: [""] }]
-                        );
-                      }}
-                    >
-                      Törlés
-                    </button>
-                  </div>
+        <div className="cq-row cq-row--matchingRow">
+          <input
+            className="cq-input"
+            placeholder="Bal oldal"
+            value={pair.left}
+            onChange={(e) => {
+              const nextPairs = [...q.pairs];
+              nextPairs[pIdx] = {
+                ...nextPairs[pIdx],
+                left: e.target.value,
+              };
+              handleField(qIdx, "pairs", nextPairs);
+            }}
+          />
 
-                  {pair.rights.map((r, rIdx) => (
-                    <div key={rIdx} className="cq-row">
-                      <input
-                        className="cq-input"
-                        placeholder="Jobb oldal"
-                        value={r}
-                        onChange={(e) => {
-                          const nextPairs = [...q.pairs];
-                          const nextRights = [...nextPairs[pIdx].rights];
-                          nextRights[rIdx] = e.target.value;
+          <button
+            className="cq-btn cq-btn--outlineDanger"
+            onClick={() => {
+              const nextPairs = q.pairs.filter((_, i) => i !== pIdx);
+              handleField(
+                qIdx,
+                "pairs",
+                nextPairs.length
+                  ? nextPairs
+                  : [{ left: "", rights: [""] }]
+              );
+            }}
+          >
+            Törlés
+          </button>
+        </div>
 
-                          nextPairs[pIdx] = {
-                            ...nextPairs[pIdx],
-                            rights: nextRights,
-                          };
+        {pair.rights.map((r, rIdx) => (
+          <div key={rIdx} className="cq-row cq-row--matchingRow">
+            <input
+              className="cq-input"
+              placeholder="Jobb oldal"
+              value={r}
+              onChange={(e) => {
+                const nextPairs = [...q.pairs];
+                const nextRights = [...nextPairs[pIdx].rights];
+                nextRights[rIdx] = e.target.value;
 
-                          handleField(qIdx, "pairs", nextPairs);
-                        }}
-                      />
+                nextPairs[pIdx] = {
+                  ...nextPairs[pIdx],
+                  rights: nextRights,
+                };
 
-                      <button
-                        className="cq-iconbtn"
-                        onClick={() => {
-                          const nextPairs = [...q.pairs];
-                          const nextRights =
-                            nextPairs[pIdx].rights.filter(
-                              (_, i) => i !== rIdx
-                            );
+                handleField(qIdx, "pairs", nextPairs);
+              }}
+            />
 
-                          nextPairs[pIdx] = {
-                            ...nextPairs[pIdx],
-                            rights: nextRights.length
-                              ? nextRights
-                              : [""],
-                          };
+            <button
+              className="cq-iconbtn"
+              onClick={() => {
+                const nextPairs = [...q.pairs];
+                const nextRights =
+                  nextPairs[pIdx].rights.filter((_, i) => i !== rIdx);
 
-                          handleField(qIdx, "pairs", nextPairs);
-                        }}
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  ))}
+                nextPairs[pIdx] = {
+                  ...nextPairs[pIdx],
+                  rights: nextRights.length
+                    ? nextRights
+                    : [""],
+                };
 
-                  <button
-                    className="cq-btn cq-btn--secondary"
-                    onClick={() => {
-                      const nextPairs = [...q.pairs];
-                      nextPairs[pIdx] = {
-                        ...nextPairs[pIdx],
-                        rights: [...nextPairs[pIdx].rights, ""],
-                      };
-                      handleField(qIdx, "pairs", nextPairs);
-                    }}
-                  >
-                    + Jobb elem
-                  </button>
-                </div>
-              ))}
+                handleField(qIdx, "pairs", nextPairs);
+              }}
+            >
+              🗑️
+            </button>
+          </div>
+        ))}
+
+        <button
+          className="cq-btn cq-btn--secondary"
+          onClick={() => {
+            const nextPairs = [...q.pairs];
+            nextPairs[pIdx] = {
+              ...nextPairs[pIdx],
+              rights: [...nextPairs[pIdx].rights, ""],
+            };
+            handleField(qIdx, "pairs", nextPairs);
+          }}
+        >
+          + Jobb elem
+        </button>
+      </div>
+    ))}
 
               <button
                 className="cq-btn cq-btn--gray"

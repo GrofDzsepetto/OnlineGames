@@ -32,7 +32,13 @@
 .cq-row--answer {
   margin-bottom: 8px;
 }
-
+.cq-row--answer input[type="checkbox"] {
+  transform: scale(1.2);
+}
+.cq-row--answer:hover {
+  background: rgba(255,255,255,0.03);
+  border-radius: 6px;
+}
 /* ================= BODY ================= */
 
 .cq-body {
@@ -220,6 +226,8 @@
 /* ================= RESPONSIVE ================= */
 
 @media (max-width: 768px) {
+
+  /* alap row mobil */
   .cq-row {
     flex-direction: column;
     align-items: stretch;
@@ -234,4 +242,69 @@
   .cq-select {
     width: 100%;
   }
+
+  /* ================= HEADER (QUESTION) ================= */
+
+  .cq-row--header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* kérdés input teljes sor */
+  .cq-row--header .cq-input {
+    grid-column: 1 / 3;
+  }
+
+  /* select bal oldalon */
+  .cq-row--header .cq-select {
+    grid-column: 1;
+  }
+
+  /* delete gomb jobb oldalon */
+  .cq-row--header .cq-btn--danger {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  /* ================= ANSWERS ================= */
+
+  .cq-row--answer {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cq-row--answer input[type="checkbox"] {
+    flex: 0 0 auto;
+  }
+
+  .cq-row--answer .cq-input {
+    flex: 1;
+  }
+
+  .cq-row--answer .cq-iconbtn {
+    flex: 0 0 auto;
+  }
+
+  /* ================= MATCHING ================= */
+
+  .cq-row--matchingRow {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cq-row--matchingRow .cq-input {
+    flex: 1;
+  }
+
+  .cq-pair {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
 }

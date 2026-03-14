@@ -112,13 +112,9 @@
 }
 
 .cq-btn--save {
-  padding: 15px 40px;
   background-color: #28a745;
   color: white;
-  font-size: 1.2rem;
-  font-weight: bold;
 }
-
 .cq-btn--secondary {
   margin-top: 10px;
   padding: 6px 12px;

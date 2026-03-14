@@ -7,7 +7,7 @@ if (file_exists($envPath)) {
 
     foreach ($lines as $line) {
         $line = trim($line);
-        if ($line === '' || str_starts_with($line, '#')) continue;
+        if ($line === '' || substr($line, 0, 1) === '#') continue;
 
         $pos = strpos($line, '=');
         if ($pos === false) continue;

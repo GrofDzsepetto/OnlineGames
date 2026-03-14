@@ -4,6 +4,25 @@ require_once __DIR__ . '/config/env.php';
 // ========================================
 // CORS ORIGINS --> .env alapján
 // ========================================
+set_exception_handler(function ($e) {
+
+    file_put_contents(
+        __DIR__ . '/error.log',
+        date('Y-m-d H:i:s') . "\n" . $e . "\n\n",
+        FILE_APPEND
+    );
+
+    http_response_code(500);
+
+    echo json_encode([
+        "error" => true,
+        "message" => ENV === 'local'
+            ? $e->getMessage()
+            : "Internal server error"
+    ]);
+
+    exit;
+});
 
 $allowedOriginsRaw = env('ALLOWED_ORIGINS', '');
 $allowedOrigins = array_values(

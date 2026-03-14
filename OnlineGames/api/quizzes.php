@@ -1,6 +1,6 @@
-    <?php
-    require __DIR__ . "/bootstrap.php";
-    require __DIR__ . "/db.php";
+<?php
+require __DIR__ . "/bootstrap.php";
+require __DIR__ . "/db.php";
 
     $userId = isset($_SESSION["user_id"]) ? (string)$_SESSION["user_id"] : null;
     $userEmail = null;
