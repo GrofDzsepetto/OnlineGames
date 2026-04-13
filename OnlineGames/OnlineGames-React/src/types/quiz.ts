@@ -27,3 +27,18 @@ export type QuizQuestion = {
   pairs?: MatchingPair[];
 };
 
+export type QuizMeta = {
+  id: string;
+  title: string;
+  description: string;
+  creator_name?: string;
+  isPublic?: boolean;
+};
+
+export type QuizResultRow = {
+  USER_ID: number;
+  USER_NAME: string;
+  SCORE: number;
+  MAX_SCORE: number;
+  CREATED_AT: string;
+};

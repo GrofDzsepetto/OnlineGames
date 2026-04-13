@@ -3,23 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getQuizMeta, getQuizResults } from "../../services/quizService";
 import { useAuth } from "../../auth/AuthContext";
 import QuizCountdownModal from "./QuizCountdownModal";
+import type { QuizMeta, QuizResultRow } from "../../types/quiz";
 
-
-type QuizMeta = {
-  id: string;
-  title: string;
-  description: string;
-  creator_name?: string;
-  isPublic?: boolean;
-};
-
-type QuizResultRow = {
-  USER_ID: number;
-  USER_NAME: string;
-  SCORE: number;
-  MAX_SCORE: number;
-  CREATED_AT: string;
-};
 
 const QuizInfo = () => {
   const { slug } = useParams();
@@ -88,10 +73,28 @@ const QuizInfo = () => {
             border: "none",
             cursor: "pointer",
             opacity: showCountdown ? 0.6 : 1,
+            margin: 20
           }}
           onClick={() => setShowCountdown(true)}
         >
           ▶ Start Quiz
+        </button>
+
+        <button
+          style={{
+            marginTop: 30,
+            padding: "12px 30px",
+            fontSize: 18,
+            borderRadius: 8,
+            background: "Dark Orchid",
+            color: "white",
+            border: "none",
+            cursor: "pointer",
+            opacity: showCountdown ? 0.6 : 1,
+          }}
+          onClick={() => navigate(`/host/${slug}`)}
+        >
+          ▶ Host Quiz
         </button>
 
         {/* ✅ Leaderboard */}
