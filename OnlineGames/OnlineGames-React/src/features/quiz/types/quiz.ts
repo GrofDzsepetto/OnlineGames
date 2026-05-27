@@ -36,9 +36,9 @@ export type QuizMeta = {
 };
 
 export type QuizResultRow = {
-  USER_ID: number;
-  USER_NAME: string;
-  SCORE: number;
-  MAX_SCORE: number;
-  CREATED_AT: string;
+  user_id: string;
+  user_name: string;
+  score: number;
+  max_score: number;
+  created_at: string;
 };

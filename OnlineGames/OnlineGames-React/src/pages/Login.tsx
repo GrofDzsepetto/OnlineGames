@@ -56,7 +56,13 @@ export default function Login() {
                       return;
                     }
 
-                    await refreshUser();
+                    const loggedInUser = await refreshUser();
+
+                    if (!loggedInUser) {
+                      console.error("Login sikeres volt, de a user.php nem adott vissza usert.");
+                      return;
+                    }
+
                     navigate("/");
                   } catch (error) {
                     console.error("Google login error:", error);

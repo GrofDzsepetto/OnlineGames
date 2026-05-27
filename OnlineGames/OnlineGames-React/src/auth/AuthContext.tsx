@@ -9,7 +9,7 @@ type User = {
 
 type AuthContextType = {
   user: User | null;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<User | null>;
   logout: () => Promise<void>;
 };
 
@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  const refreshUser = async () => {
+  const refreshUser = async (): Promise<User | null> => {
     try {
       const res = await fetch(`${API_BASE}/auth/user.php`, {
         credentials: "include",
@@ -26,21 +26,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       const data = await res.json();
 
+      console.log("USER.PHP RESPONSE:", data);
+
       if (!res.ok || !data?.success || !data?.data?.user) {
         setUser(null);
-        return;
+        return null;
       }
 
       const apiUser = data.data.user;
 
-      setUser({
+      const normalizedUser: User = {
         id: String(apiUser.id),
         email: String(apiUser.email),
         name: apiUser.name ?? "",
-      });
+      };
+
+      setUser(normalizedUser);
+      return normalizedUser;
     } catch (error) {
       console.error("Hiba a felhasználó lekérése során:", error);
       setUser(null);
+      return null;
     }
   };
 

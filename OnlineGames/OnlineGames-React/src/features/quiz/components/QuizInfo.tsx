@@ -140,18 +140,18 @@ const QuizInfo = () => {
                     </thead>
                     <tbody>
                       {results.slice(0, 10).map((r, idx) => (
-                        <tr key={`${r.USER_ID}-${idx}`}>
+                        <tr key={`${r.user_id}-${idx}`}>
                           <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>
                             {idx + 1}
                           </td>
                           <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>
-                            {r.USER_NAME}
+                            {r.user_name}
                           </td>
                           <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>
-                            {r.SCORE} / {r.MAX_SCORE}
+                            {r.score} / {r.max_score}
                           </td>
                           <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>
-                            {r.CREATED_AT}
+                            {r.created_at}
                           </td>
                         </tr>
                       ))}

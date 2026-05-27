@@ -2,55 +2,49 @@
 require __DIR__ . "/../bootstrap.php";
 require __DIR__ . "/../db.php";
 
-// ========================================
-// DEBUG KAPCSOLÓ
-// ========================================
+try {
+    app_log("USER CHECK SESSION ID: " . session_id());
 
-$DEBUG = false; // ⬅️ true ha debugolni akarsz
+    if (!isset($_SESSION["user_id"])) {
+        json_success([
+            "user" => null
+        ]);
+    }
 
-if ($DEBUG) {
-    error_log("USER CHECK SESSION ID: " . session_id());
-    error_log("USER CHECK SESSION DATA: " . print_r($_SESSION, true));
-    error_log("USER CHECK COOKIES: " . print_r($_COOKIE, true));
+    $userId = (int)$_SESSION["user_id"];
 
-    echo json_encode([
-        "debug" => [
-            "session_id" => session_id(),
-            "session" => $_SESSION,
-            "cookies" => $_COOKIE,
-            "params" => session_get_cookie_params(),
+    $stmt = $pdo->prepare("
+        select id, email, name
+        from users
+        where id = ?
+        limit 1
+    ");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        unset($_SESSION["user_id"]);
+
+        json_success([
+            "user" => null
+        ]);
+    }
+
+    json_success([
+        "user" => [
+            "id" => (string)$user["id"],
+            "email" => (string)$user["email"],
+            "name" => (string)($user["name"] ?? ""),
         ]
     ]);
-    exit;
+
+} catch (Throwable $e) {
+    app_log_exception("USER CHECK ERROR", $e);
+
+    json_error(
+        ENV === "local"
+            ? $e->getMessage()
+            : "Nem sikerült lekérni a felhasználót.",
+        500
+    );
 }
-
-// ========================================
-// AUTH CHECK
-// ========================================
-
-if (!isset($_SESSION["user_id"])) {
-    echo json_encode(["user" => null]);
-    exit;
-}
-
-// ========================================
-// USER LEKÉRÉS
-// ========================================
-
-$stmt = $pdo->prepare("
-    SELECT email, name
-    FROM users
-    WHERE id = ?
-");
-$stmt->execute([$_SESSION["user_id"]]);
-
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-echo json_encode([
-    "user" => [
-        "id" => (int)$_SESSION["user_id"],
-        "email" => $user["email"],
-        "name" => $user["name"],
-    ]
-]);
-exit;

@@ -4,14 +4,13 @@ import type { ApiQuizResponse, ApiQuestion } from "./quizApi.types";
 
 const toBool = (v: any) => v === 1 || v === "1" || v === true;
 
-/* -------------------------------------------------------
-   TYPES
-------------------------------------------------------- */
+const getErrorMessage = (data: any, fallback: string) =>
+  data?.message || data?.error || fallback;
 
 export type CreateQuizPayload = {
   title: string;
   description: string;
-  language: string; 
+  language: string;
   questions: Array<{
     text: string;
     type: "MULTIPLE_CHOICE" | "MATCHING";
@@ -32,24 +31,20 @@ export type QuizForEdit = {
   questions: QuizQuestion[];
 };
 
-
-
-/* -------------------------------------------------------
-   GET LIST
-------------------------------------------------------- */
-
 export async function getQuizzes(): Promise<Quiz[]> {
   const res = await fetch(`${API_BASE}/quizzes.php`, {
     credentials: "include",
   });
 
-  const raw = await res.text();
-  const data = JSON.parse(raw);
+  const data = await res.json();
 
-  if (!res.ok)
-    throw new Error(data?.error || `HTTP ${res.status}`);
+  if (!res.ok || !data?.success) {
+    throw new Error(getErrorMessage(data, `HTTP ${res.status}`));
+  }
 
-  return (data ?? []).map((q: any) => ({
+  const quizzes = data?.data?.quizzes ?? [];
+
+  return quizzes.map((q: any) => ({
     id: String(q.id),
     slug: q.slug,
     title: q.title,
@@ -57,148 +52,100 @@ export async function getQuizzes(): Promise<Quiz[]> {
     creator_name: q.creator_name ?? undefined,
     created_by: String(q.created_by),
     language: (q.language_code ?? "hu").toLowerCase(),
-    is_public: Boolean(q.is_public),
+    is_public: toBool(q.is_public),
   }));
 }
 
-
-/* -------------------------------------------------------
-   GET QUESTIONS (PLAY)
-------------------------------------------------------- */
-
 export async function getQuizQuestions(slugOrId: string): Promise<QuizQuestion[]> {
-  console.log("======== FETCH START ========");
-  console.log("SLUG OR ID:", slugOrId);
-
   const res = await fetch(
     `${API_BASE}/quiz.php?slug=${encodeURIComponent(slugOrId)}`,
     { credentials: "include" }
   );
 
-  console.log("HTTP STATUS:", res.status);
+  const json: ApiQuizResponse = await res.json();
 
-  const raw = await res.text();
-  console.log("RAW RESPONSE TEXT:", raw);
-
-  let json: ApiQuizResponse;
-
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    console.error("JSON PARSE ERROR");
-    throw new Error("Invalid JSON from quiz.php:\n" + raw.slice(0, 300));
+  if (!res.ok || !json?.success) {
+    throw new Error(getErrorMessage(json, `HTTP ${res.status}`));
   }
 
-  console.log("PARSED JSON:", json);
-
-  if (!res.ok) {
-    console.error("HTTP NOT OK:", json);
-    throw new Error((json as any)?.error ?? `HTTP ${res.status}`);
-  }
-
-  console.log("QUIZ OBJECT:", json.quiz);
-  console.log("QUESTIONS FIELD:", json?.quiz?.questions);
-
-  const apiQuestions = json?.quiz?.questions ?? [];
-
-  console.log("QUESTIONS LENGTH:", apiQuestions.length);
-  console.log("======== FETCH END ========");
+  const apiQuestions = json.data?.quiz?.questions ?? [];
 
   return apiQuestions.map((q: ApiQuestion): QuizQuestion => {
-    console.log("MAPPING QUESTION:", q);
+    const questionText = q.question_text ?? q.question ?? "";
 
     if (q.type === "MATCHING") {
       return {
-        id: q.id,
+        id: q.id ?? "",
         type: "MATCHING",
-        question: q.question_text,
+        question: questionText,
         pairs: (q.groups ?? []).map((g) => ({
-          left: (g.left ?? "").toString(),
-          rights: (g.right ?? []).map((x) => x.toString()),
+          left: String(g.left ?? ""),
+          rights: (g.right ?? []).map((x) => String(x)),
         })),
       };
     }
 
     return {
-      id: q.id,
+      id: q.id ?? "",
       type: "MULTIPLE_CHOICE",
-      question: q.question_text,
+      question: questionText,
       answers: (q.answers ?? []).map((a) => ({
-        text: a.answer_text,
-        correct: toBool(a.is_correct),
+        text: String(a.answer_text ?? a.label ?? a.text ?? ""),
+        correct: toBool(a.is_correct ?? a.isCorrect),
       })),
     };
   });
 }
 
-
-/* -------------------------------------------------------
-   GET FOR EDIT
-------------------------------------------------------- */
-
-export async function getQuizForEdit(
-  slugOrId: string
-): Promise<QuizForEdit> {
+export async function getQuizForEdit(slugOrId: string): Promise<QuizForEdit> {
   const res = await fetch(
-    `${API_BASE}/quiz.php?slug=${encodeURIComponent(slugOrId)}`,
+    `${API_BASE}/get_quiz_for_edit.php?id=${encodeURIComponent(slugOrId)}`,
     { credentials: "include" }
   );
 
-  const raw = await res.text();
+  const json = await res.json();
 
-  let json: ApiQuizResponse;
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    throw new Error("Invalid JSON from quiz.php:\n" + raw.slice(0, 300));
+  if (!res.ok || !json?.success) {
+    throw new Error(getErrorMessage(json, `HTTP ${res.status}`));
   }
 
-  if (!res.ok) throw new Error((json as any)?.error ?? `HTTP ${res.status}`);
+  const quiz = json.data?.quiz;
 
-  const quiz = json.quiz;
+  if (!quiz) {
+    throw new Error("Quiz data missing from response");
+  }
 
-  const questions = (quiz?.questions ?? []).map(
-    (q: ApiQuestion): QuizQuestion => {
-      if (q.type === "MATCHING") {
-        return {
-          id: q.id,
-          type: "MATCHING",
-          question: q.question_text,
-          pairs: (q.groups ?? []).map((g) => ({
-            left: (g.left?.[0] ?? "").toString(),
-            rights: (g.right ?? []).map((x) => x.toString()),
-          })),
-        };
-      }
-
+  const questions: QuizQuestion[] = (quiz.questions ?? []).map((q: any) => {
+    if (q.type === "MATCHING") {
       return {
-        id: q.id,
-        type: "MULTIPLE_CHOICE",
-        question: q.question_text,
-        answers: (q.answers ?? []).map((a) => ({
-          text: a.answer_text,
-          correct: toBool(a.is_correct),
-        })),
+        id: q.id ?? "",
+        type: "MATCHING",
+        question: q.question ?? q.question_text ?? "",
+        pairs: q.pairs ?? [],
       };
     }
-  );
+
+    return {
+      id: q.id ?? "",
+      type: "MULTIPLE_CHOICE",
+      question: q.question ?? q.question_text ?? "",
+      answers: (q.answers ?? []).map((a: any) => ({
+        text: String(a.text ?? a.answer_text ?? a.label ?? ""),
+        correct: toBool(a.correct ?? a.isCorrect ?? a.is_correct),
+      })),
+    };
+  });
 
   return {
-    quiz_id: String(quiz.id),
+    quiz_id: String(quiz.quiz_id ?? quiz.id),
     title: String(quiz.title ?? ""),
     description: String(quiz.description ?? ""),
-    language: String(quiz.language_code ?? "hu"),
-    isPublic: toBool(quiz.is_public),
-    viewerEmails: (quiz.viewers_email ?? []).map((e: any) =>
-      String(e.EMAIL ?? e)
-    ),
+    language: String(quiz.language ?? quiz.language_code ?? "hu"),
+    isPublic: toBool(quiz.isPublic ?? quiz.is_public),
+    viewerEmails: quiz.viewerEmails ?? quiz.viewer_emails ?? [],
     questions,
   };
 }
-
-/* -------------------------------------------------------
-   CREATE
-------------------------------------------------------- */
 
 export async function createQuiz(
   payload: CreateQuizPayload
@@ -210,27 +157,17 @@ export async function createQuiz(
     body: JSON.stringify(payload),
   });
 
-  const raw = await res.text();
+  const data = await res.json();
 
-  let data: any;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    throw new Error("Invalid JSON from create_quiz.php:\n" + raw.slice(0, 300));
+  if (!res.ok || !data?.success) {
+    throw new Error(getErrorMessage(data, `Create failed (HTTP ${res.status})`));
   }
 
-  if (!res.ok)
-    throw new Error(data?.error || `Create failed (HTTP ${res.status})`);
-
   return {
-    quiz_id: String(data.quiz_id),
-    slug: String(data.slug),
+    quiz_id: String(data.data.quiz_id),
+    slug: String(data.data.slug),
   };
 }
-
-/* -------------------------------------------------------
-   UPDATE
-------------------------------------------------------- */
 
 export async function updateQuiz(
   payload: { quiz_id: string } & CreateQuizPayload
@@ -242,23 +179,12 @@ export async function updateQuiz(
     body: JSON.stringify(payload),
   });
 
-  const raw = await res.text();
+  const data = await res.json();
 
-  let data: any;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    throw new Error("Invalid JSON from update_quiz.php:\n" + raw.slice(0, 300));
+  if (!res.ok || !data?.success) {
+    throw new Error(getErrorMessage(data, `Update failed (HTTP ${res.status})`));
   }
-
-  if (!res.ok)
-    throw new Error(data?.error || `Update failed (HTTP ${res.status})`);
 }
-
-
-/* -------------------------------------------------------
-   DELETE
-------------------------------------------------------- */
 
 export async function deleteQuiz(quizId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/delete_quiz.php`, {
@@ -268,19 +194,12 @@ export async function deleteQuiz(quizId: string): Promise<void> {
     body: JSON.stringify({ quiz_id: quizId }),
   });
 
-  const raw = await res.text();
+  const data = await res.json().catch(() => null);
 
-  let data: any = null;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    data = null;
+  if (!res.ok || !data?.success) {
+    throw new Error(getErrorMessage(data, `Delete failed (HTTP ${res.status})`));
   }
-
-  if (!res.ok)
-    throw new Error(data?.error || `Delete failed (HTTP ${res.status})`);
 }
-
 
 export async function getQuizMeta(slug: string) {
   const res = await fetch(
@@ -288,38 +207,29 @@ export async function getQuizMeta(slug: string) {
     { credentials: "include" }
   );
 
-  const raw = await res.text();
+  const json = await res.json();
 
-  let json: any;
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    throw new Error("Invalid JSON from quiz.php:\n" + raw.slice(0, 300));
+  if (!res.ok || !json?.success) {
+    throw new Error(getErrorMessage(json, "Failed to load quiz"));
   }
 
-  if (!res.ok) {
-    throw new Error(json?.error ?? "Failed to load quiz");
-  }
-
-  const q = json.quiz ?? json.QUIZ ?? json;
+  const q = json.data?.quiz;
 
   if (!q) {
     throw new Error("Quiz data missing from response");
   }
 
   return {
-    id: q.id ?? q.ID,
-    title: q.title ?? q.TITLE,
-    description: q.description ?? q.DESCRIPTION,
-    creator_name: q.creator_name ?? q.CREATOR_NAME,
-    language: (q.language_code ?? q.LANGUAGE_CODE ?? "hu"),
-    isPublic: (q.is_public ?? q.IS_PUBLIC) === 1,
+    id: q.id,
+    title: q.title,
+    description: q.description,
+    creator_name: q.creator_name,
+    language: q.language_code ?? "hu",
+    isPublic: toBool(q.is_public),
   };
 }
 
-
-
-export async function getQuizResults(slug: string){
+export async function getQuizResults(slug: string) {
   const res = await fetch(
     `${API_BASE}/get_results.php?slug=${encodeURIComponent(slug)}`,
     { credentials: "include" }
@@ -327,16 +237,15 @@ export async function getQuizResults(slug: string){
 
   const json = await res.json().catch(() => null);
 
-  if (!res.ok) {
-    throw new Error(json?.error ?? `HTTP ${res.status}`);
+  if (!res.ok || !json?.success) {
+    throw new Error(getErrorMessage(json, `HTTP ${res.status}`));
   }
 
   return {
-    slug,
-    results: Array.isArray(json.results) ? json.results : [],
+    slug: json.data?.slug ?? slug,
+    results: Array.isArray(json.data?.results) ? json.data.results : [],
   };
 }
-
 
 export async function saveQuizResult(payload: {
   quiz_slug: string;
@@ -350,23 +259,11 @@ export async function saveQuizResult(payload: {
     body: JSON.stringify(payload),
   });
 
-  const raw = await res.text();
+  const json = await res.json();
 
-  let json: any;
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    throw new Error(
-      "Invalid JSON from upsert_quiz_attempt.php:\n" +
-        raw.slice(0, 300)
-    );
+  if (!res.ok || !json?.success) {
+    throw new Error(getErrorMessage(json, `HTTP ${res.status}`));
   }
 
-  if (!res.ok) {
-    throw new Error(
-      json?.details || json?.error || `HTTP ${res.status}`
-    );
-  }
-
-  return json;
+  return json.data;
 }
