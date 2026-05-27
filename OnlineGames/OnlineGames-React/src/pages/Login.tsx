@@ -22,9 +22,7 @@ export default function Login() {
         <div className="login-card">
           <div className="login-header">
             <h1 className="login-title">{t("login.title")}</h1>
-            <p className="login-subtitle">
-              {t("login.subtitle")}
-            </p>
+            <p className="login-subtitle">{t("login.subtitle")}</p>
           </div>
 
           <div className="login-button-wrapper">
@@ -34,28 +32,44 @@ export default function Login() {
                 shape="pill"
                 size="large"
                 onSuccess={async (cred) => {
-                  if (!cred.credential) return;
+                  try {
+                    if (!cred.credential) {
+                      console.error("Missing Google credential");
+                      return;
+                    }
 
-                  const res = await fetch(`${API_BASE}/auth/google.php`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ token: cred.credential }),
-                  });
+                    const res = await fetch(`${API_BASE}/auth/google.php`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      credentials: "include",
+                      body: JSON.stringify({
+                        token: cred.credential,
+                      }),
+                    });
 
-                  const text = await res.text();
-                  console.log("RAW google.php response:", text);
+                    const data = await res.json();
 
-                  await refreshUser();
-                  navigate("/");
+                    if (!res.ok || !data?.success) {
+                      console.error("Google login failed:", data);
+                      return;
+                    }
+
+                    await refreshUser();
+                    navigate("/");
+                  } catch (error) {
+                    console.error("Google login error:", error);
+                  }
+                }}
+                onError={() => {
+                  console.error("Google login failed");
                 }}
               />
             </div>
           </div>
 
-          <div className="login-terms">
-            {t("login.terms")}
-          </div>
+          <div className="login-terms">{t("login.terms")}</div>
         </div>
 
         <div className="login-footer">

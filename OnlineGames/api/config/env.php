@@ -1,6 +1,6 @@
 <?php
 
-$envPath = dirname(__DIR__) . '/.env';
+$envPath = __DIR__ . '/.env';
 
 if (file_exists($envPath)) {
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -33,7 +33,7 @@ function env(string $key, $default = null) {
     return ($value !== false && $value !== '') ? $value : $default;
 }
 
-define('ENV', env('APP_ENV', 'production'));
+define("ENV", env("APP_ENV", "production"));
 
 define('DB_HOST', env('DB_HOST', '127.0.0.1'));
 define('DB_NAME', env('DB_NAME', ''));
