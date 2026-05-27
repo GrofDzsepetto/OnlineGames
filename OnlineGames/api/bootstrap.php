@@ -1,5 +1,9 @@
 <?php
 require_once __DIR__ . '/config/env.php';
+require_once __DIR__ . "/core/response.php";
+require_once __DIR__ . "/core/request.php";
+require_once __DIR__ . "/core/auth.php";
+require_once __DIR__ . "/core/logger.php";
 
 // ========================================
 // CORS ORIGINS --> .env alapján
@@ -39,8 +43,10 @@ if ($origin && in_array($origin, $allowedOrigins, true)) {
     header("Vary: Origin");
 }
 
-error_log("ORIGIN: " . ($_SERVER['HTTP_ORIGIN'] ?? 'none'));
-error_log("ALLOWED: " . $allowedOriginsRaw);
+if (ENV === "local") {
+    error_log("ORIGIN: " . ($_SERVER["HTTP_ORIGIN"] ?? "none"));
+    error_log("ALLOWED: " . $allowedOriginsRaw);
+}
 
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");

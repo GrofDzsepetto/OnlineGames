@@ -5,8 +5,9 @@
 
 require_once __DIR__ . '/config/env.php';
 
-error_log("DB DEBUG ENV=" . ENV . " DB_NAME=" . DB_NAME);
-
+if (ENV === "local") {
+    error_log("DB DEBUG ENV=" . ENV . " DB_NAME=" . DB_NAME);
+}
 
 $pdo = new PDO(
     "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",

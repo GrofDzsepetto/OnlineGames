@@ -2,50 +2,26 @@
 require __DIR__ . "/bootstrap.php";
 require __DIR__ . "/db.php";
 
-    $userId = isset($_SESSION["user_id"]) ? (string)$_SESSION["user_id"] : null;
-    $userEmail = null;
+$userId = isset($_SESSION["user_id"]) ? (string)$_SESSION["user_id"] : null;
+$userEmail = null;
 
+try {
     if ($userId) {
         $emailStmt = $pdo->prepare("
-            SELECT email
-            FROM users
-            WHERE id = ?
-            LIMIT 1
+            select email
+            from users
+            where id = ?
+            limit 1
         ");
         $emailStmt->execute([$userId]);
+
         $userEmail = $emailStmt->fetchColumn();
         $userEmail = $userEmail ? strtolower(trim((string)$userEmail)) : null;
     }
 
-    try {
-        if (!$userId || !$userEmail) {
-
-            $sql = "
-                SELECT 
-                    q.id, 
-                    q.slug, 
-                    q.title, 
-                    q.description,
-                    q.created_by,
-                    q.is_public,
-                    q.language_code,
-                    u.name AS creator_name
-                FROM quiz q
-                LEFT JOIN users u ON q.created_by = u.id
-                WHERE q.is_published = 1
-                AND q.is_public = 1
-                ORDER BY q.created_at DESC
-            ";
-
-            $stmt = $pdo->query($sql);
-            $quizzes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            echo json_encode($quizzes, JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-
+    if (!$userId || !$userEmail) {
         $sql = "
-            SELECT 
+            select 
                 q.id, 
                 q.slug, 
                 q.title, 
@@ -53,30 +29,57 @@ require __DIR__ . "/db.php";
                 q.created_by,
                 q.is_public,
                 q.language_code,
-                u.name AS creator_name
-            FROM quiz q
-            LEFT JOIN users u ON q.created_by = u.id
-            WHERE q.is_published = 1
-            AND (
-                    q.is_public = 1
-                    OR q.created_by = ?
-                    OR EXISTS (
-                        SELECT 1
-                        FROM quiz_viewer_email v
-                        WHERE v.quiz_id = q.id
-                        AND v.user_email = ?
-                    )
-            )
-            ORDER BY q.created_at DESC
+                u.name as creator_name
+            from quiz q
+            left join users u on q.created_by = u.id
+            where q.is_published = 1
+            and q.is_public = 1
+            order by q.created_at desc
         ";
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$userId, $userEmail]);
-        $quizzes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $pdo->query($sql);
+        $quizzes = $stmt->fetchAll();
 
-        echo json_encode($quizzes, JSON_UNESCAPED_UNICODE);
-
-    } catch (PDOException $e) {
-        http_response_code(500);
-        echo json_encode(["error" => "SQL hiba: " . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        json_success([
+            "quizzes" => $quizzes
+        ]);
     }
+
+    $sql = "
+        select 
+            q.id, 
+            q.slug, 
+            q.title, 
+            q.description,
+            q.created_by,
+            q.is_public,
+            q.language_code,
+            u.name as creator_name
+        from quiz q
+        left join users u on q.created_by = u.id
+        where q.is_published = 1
+        and (
+            q.is_public = 1
+            or q.created_by = ?
+            or exists (
+                select 1
+                from quiz_viewer_email v
+                where v.quiz_id = q.id
+                and lower(v.user_email) = ?
+            )
+        )
+        order by q.created_at desc
+    ";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$userId, $userEmail]);
+    $quizzes = $stmt->fetchAll();
+
+    json_success([
+        "quizzes" => $quizzes
+    ]);
+
+} catch (Throwable $e) {
+    app_log_exception("QUIZZES ERROR: ", $e);
+    json_error("Nem sikerült betölteni a kvízeket.", 500);
+}

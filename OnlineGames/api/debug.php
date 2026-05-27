@@ -1,7 +1,11 @@
 <?php
+require __DIR__ . "/bootstrap.php";
 
-echo json_encode([
-    "origin" => $_SERVER['HTTP_ORIGIN'] ?? null,
+if (ENV !== "local") {
+    json_error("Not found", 404);
+}
+
+json_success([
     "cookies" => $_COOKIE,
-    "session" => $_SESSION ?? null
+    "session" => $_SESSION ?? null,
 ]);

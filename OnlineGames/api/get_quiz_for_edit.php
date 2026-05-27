@@ -2,32 +2,15 @@
 require __DIR__ . "/bootstrap.php";
 require __DIR__ . "/db.php";
 
-$DEBUG = true; // <- ha kész, tedd false-ra
+$key = trim((string)($_GET["id"] ?? $_GET["slug"] ?? ""));
 
-$key = $_GET["id"] ?? $_GET["slug"] ?? null;
-
-if (!$key) {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing id/slug"], JSON_UNESCAPED_UNICODE);
-    exit;
+if ($key === "") {
+    json_error("Missing id/slug", 400);
 }
 
-if (!isset($_SESSION["user_id"])) {
-    http_response_code(401);
-    echo json_encode(["error" => "Bejelentkezés szükséges!"], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$userId = (string)$_SESSION["user_id"];
-
-function db_uuid(PDO $pdo): string {
-    return (string)$pdo->query("select uuid()")->fetchColumn();
-}
+$userId = require_user_id();
 
 try {
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-
     $quizStmt = $pdo->prepare("
         select id, slug, title, description, is_public, created_by
         from quiz
@@ -35,24 +18,21 @@ try {
         limit 1
     ");
     $quizStmt->execute([$key, $key]);
-    $quiz = $quizStmt->fetch(PDO::FETCH_ASSOC);
+    $quiz = $quizStmt->fetch();
 
     if (!$quiz) {
-        http_response_code(404);
-        echo json_encode(["error" => "Quiz not found"], JSON_UNESCAPED_UNICODE);
-        exit;
+        json_error("Quiz not found", 404);
     }
 
-    if ((string)$quiz["created_by"] !== $userId) {
-        http_response_code(403);
-        echo json_encode(["error" => "Nincs jogosultságod ehhez a kvízhez."], JSON_UNESCAPED_UNICODE);
-        exit;
+    if ((string)$quiz["created_by"] !== (string)$userId) {
+        json_error("Nincs jogosultságod ehhez a kvízhez.", 403);
     }
 
     $quizId = (string)$quiz["id"];
     $isPublic = ((int)$quiz["is_public"] === 1);
 
     $viewerEmails = [];
+
     if (!$isPublic) {
         $viewersStmt = $pdo->prepare("
             select user_email
@@ -61,14 +41,11 @@ try {
             order by user_email
         ");
         $viewersStmt->execute([$quizId]);
-        $viewerEmails = $viewersStmt->fetchAll(PDO::FETCH_COLUMN);
 
-        $clean = [];
-        foreach ($viewerEmails as $e) {
-            $e = strtolower(trim((string)$e));
-            if ($e !== "") $clean[] = $e;
-        }
-        $viewerEmails = array_values(array_unique($clean));
+        $viewerEmails = array_values(array_unique(array_filter(array_map(
+            fn($email) => strtolower(trim((string)$email)),
+            $viewersStmt->fetchAll(PDO::FETCH_COLUMN)
+        ))));
     }
 
     $questionStmt = $pdo->prepare("
@@ -78,7 +55,7 @@ try {
         order by order_index, id
     ");
     $questionStmt->execute([$quizId]);
-    $questionsRows = $questionStmt->fetchAll(PDO::FETCH_ASSOC);
+    $questionRows = $questionStmt->fetchAll();
 
     $answerStmt = $pdo->prepare("
         select label, is_correct, order_index
@@ -102,48 +79,53 @@ try {
 
     $questions = [];
 
-    foreach ($questionsRows as $qr) {
-        $qid = (string)$qr["id"];
-        $type = (string)$qr["type"];
-        $qText = (string)$qr["question_text"];
+    foreach ($questionRows as $questionRow) {
+        $questionId = (string)$questionRow["id"];
+        $type = (string)$questionRow["type"];
+        $questionText = (string)$questionRow["question_text"];
 
         if ($type === "MULTIPLE_CHOICE") {
-            $answerStmt->execute([$qid]);
-            $ansRows = $answerStmt->fetchAll(PDO::FETCH_ASSOC);
+            $answerStmt->execute([$questionId]);
+            $answerRows = $answerStmt->fetchAll();
 
             $answers = [];
-            foreach ($ansRows as $a) {
+
+            foreach ($answerRows as $answerRow) {
                 $answers[] = [
-                    "text" => (string)$a["label"],
-                    "isCorrect" => ((int)$a["is_correct"] === 1),
+                    "text" => (string)$answerRow["label"],
+                    "isCorrect" => ((int)$answerRow["is_correct"] === 1),
                 ];
             }
 
             $questions[] = [
                 "type" => "MULTIPLE_CHOICE",
-                "question" => $qText,
+                "question" => $questionText,
                 "answers" => $answers,
                 "pairs" => [],
             ];
+
+            continue;
         }
 
         if ($type === "MATCHING") {
-            $pairStmt->execute([$qid]);
-            $rows = $pairStmt->fetchAll(PDO::FETCH_ASSOC);
+            $pairStmt->execute([$questionId]);
+            $pairRows = $pairStmt->fetchAll();
 
             $byLeft = [];
 
-            foreach ($rows as $row) {
-                $leftText = (string)$row["left_text"];
-                $rightText = (string)$row["right_text"];
+            foreach ($pairRows as $pairRow) {
+                $leftText = (string)$pairRow["left_text"];
+                $rightText = (string)$pairRow["right_text"];
 
                 if (!isset($byLeft[$leftText])) {
                     $byLeft[$leftText] = [];
                 }
+
                 $byLeft[$leftText][] = $rightText;
             }
 
             $pairs = [];
+
             foreach ($byLeft as $left => $rights) {
                 $pairs[] = [
                     "left" => $left,
@@ -153,43 +135,27 @@ try {
 
             $questions[] = [
                 "type" => "MATCHING",
-                "question" => $qText,
+                "question" => $questionText,
                 "answers" => [],
                 "pairs" => $pairs,
             ];
         }
     }
 
-    $out = [
-        "quiz_id" => $quizId,
-        "slug" => (string)$quiz["slug"],
-        "title" => (string)$quiz["title"],
-        "description" => (string)($quiz["description"] ?? ""),
-        "isPublic" => $isPublic,
-        "viewerEmails" => $viewerEmails,
-        "questions" => $questions
-    ];
+    json_success([
+        "quiz" => [
+            "quiz_id" => $quizId,
+            "slug" => (string)$quiz["slug"],
+            "title" => (string)$quiz["title"],
+            "description" => (string)($quiz["description"] ?? ""),
+            "isPublic" => $isPublic,
+            "viewerEmails" => $viewerEmails,
+            "questions" => $questions,
+        ]
+    ]);
 
-    if ($DEBUG) {
-        $out["debug"] = [
-            "key" => $key,
-            "user_id" => $userId,
-            "is_public_db_raw" => $quiz["is_public"],
-            "is_public_bool" => $isPublic,
-            "viewer_emails_count" => count($viewerEmails),
-            "viewer_emails" => $viewerEmails
-        ];
-    }
+} catch (Throwable $e) {
+    app_log_exception("GET QUIZ FOR EDIT ERROR: ", $e);
 
-    echo json_encode($out, JSON_UNESCAPED_UNICODE);
-    exit;
-
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(["error" => "DB error"], JSON_UNESCAPED_UNICODE);
-    exit;
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["error" => $e->getMessage()], JSON_UNESCAPED_UNICODE);
-    exit;
+    json_error("Nem sikerült betölteni a szerkesztendő kvízt.", 500);
 }
