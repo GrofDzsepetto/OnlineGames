@@ -2,33 +2,31 @@
 require __DIR__ . "/../bootstrap.php";
 require __DIR__ . "/../db.php";
 
-// ========================================
-// INPUT (JSON)
-$raw = file_get_contents("php://input");
-$data = json_decode($raw, true);
+$data = read_json_body();
 
-if (
-    !is_array($data) ||
-    empty($data["pin"])
-) {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing pin"]);
-    exit;
+$pin = trim((string)($data["pin"] ?? ""));
+
+if ($pin === "") {
+    json_error("Missing pin", 400);
 }
 
-$pin = (string)$data["pin"];
+try {
+    $stmt = $pdo->prepare("
+        update game_sessions
+        set state = 'playing',
+            current_question_index = 0,
+            question_started_at = now()
+        where id = ?
+    ");
+    $stmt->execute([$pin]);
 
-// ========================================
-// UPDATE
-$stmt = $pdo->prepare("
-    UPDATE game_sessions
-    SET state = 'playing',
-        current_question_index = 0,
-        question_started_at = NOW()
-    WHERE id = ?
-");
+    if ($stmt->rowCount() === 0) {
+        json_error("Game not found", 404);
+    }
 
-$stmt->execute([$pin]);
+    json_success();
 
-// ========================================
-echo json_encode(["ok" => true]);
+} catch (Throwable $e) {
+    app_log_exception("START GAME ERROR", $e);
+    json_error("Nem sikerült elindítani a játékot.", 500);
+}

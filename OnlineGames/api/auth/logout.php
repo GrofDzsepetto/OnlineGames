@@ -1,30 +1,44 @@
 <?php
 require __DIR__ . "/../bootstrap.php";
+require __DIR__ . "/../db.php";
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit;
+try {
+    app_log("USER CHECK SESSION ID: " . session_id());
+
+    if (!isset($_SESSION["user_id"])) {
+        json_success([
+            "user" => null
+        ]);
+    }
+
+    $userId = (int)$_SESSION["user_id"];
+
+    $stmt = $pdo->prepare("
+        select email, name
+        from users
+        where id = ?
+        limit 1
+    ");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        unset($_SESSION["user_id"]);
+
+        json_success([
+            "user" => null
+        ]);
+    }
+
+    json_success([
+        "user" => [
+            "id" => $userId,
+            "email" => (string)$user["email"],
+            "name" => (string)$user["name"],
+        ]
+    ]);
+
+} catch (Throwable $e) {
+    app_log_exception("USER CHECK ERROR", $e);
+    json_error("Nem sikerült lekérni a felhasználót.", 500);
 }
-
-// Session törlés
-$_SESSION = [];
-
-if (ini_get("session.use_cookies")) {
-    $params = session_get_cookie_params();
-    setcookie(
-        session_name(),
-        '',
-        time() - 42000,
-        $params["path"],
-        isset($params["domain"]) ? $params["domain"] : '',
-        $params["secure"],
-        $params["httponly"]
-    );
-}
-
-session_destroy();
-
-echo json_encode([
-    "status" => "success",
-    "message" => "Logged out successfully"
-]);
-exit;

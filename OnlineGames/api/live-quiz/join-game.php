@@ -2,46 +2,40 @@
 require __DIR__ . "/../bootstrap.php";
 require __DIR__ . "/../db.php";
 
-$raw = file_get_contents("php://input");
-$data = json_decode($raw, true);
+$data = read_json_body();
 
-if (
-    !is_array($data) ||
-    empty($data["pin"]) ||
-    empty($data["name"])
-) {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing data"]);
-    exit;
+$pin = trim((string)($data["pin"] ?? ""));
+$name = trim((string)($data["name"] ?? ""));
+
+if ($pin === "" || $name === "") {
+    json_error("Missing data", 400);
 }
 
-$pin = (string)$data["pin"];
-$name = trim($data["name"]);
+try {
+    $stmt = $pdo->prepare("
+        select id
+        from game_sessions
+        where id = ?
+        limit 1
+    ");
+    $stmt->execute([$pin]);
+    $game = $stmt->fetch();
 
-// game check
-$stmt = $pdo->prepare("
-    SELECT id FROM game_sessions WHERE id = ? LIMIT 1
-");
-$stmt->execute([$pin]);
-$game = $stmt->fetch();
+    if (!$game) {
+        json_error("Game not found", 404);
+    }
 
-if (!$game) {
-    http_response_code(404);
-    echo json_encode(["error" => "Game not found"]);
-    exit;
+    $stmt = $pdo->prepare("
+        insert into game_players (game_id, name, score)
+        values (?, ?, 0)
+    ");
+    $stmt->execute([$pin, $name]);
+
+    json_success([
+        "player_id" => $pdo->lastInsertId()
+    ]);
+
+} catch (Throwable $e) {
+    app_log_exception("JOIN GAME ERROR", $e);
+    json_error("Nem sikerült csatlakozni a játékhoz.", 500);
 }
-
-// player insert
-$stmt = $pdo->prepare("
-    INSERT INTO game_players (game_id, name, score)
-    VALUES (?, ?, 0)
-");
-
-$stmt->execute([$pin, $name]);
-
-$playerId = $pdo->lastInsertId();
-
-echo json_encode([
-    "ok" => true,
-    "player_id" => $playerId
-]);

@@ -2,134 +2,117 @@
 require __DIR__ . "/../bootstrap.php";
 require __DIR__ . "/../db.php";
 
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+$pin = trim((string)($_GET["pin"] ?? ""));
 
-// ========================================
-// INPUT
-$pin = $_GET["pin"] ?? null;
-
-if (!$pin) {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing pin"]);
-    exit;
+if ($pin === "") {
+    json_error("Missing pin", 400);
 }
 
-// ========================================
-// GAME
-$stmt = $pdo->prepare("
-    SELECT *
-    FROM game_sessions
-    WHERE id = ?
-    LIMIT 1
-");
-$stmt->execute([$pin]);
-$game = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$game) {
-    http_response_code(404);
-    echo json_encode(["error" => "Game not found"]);
-    exit;
-}
-
-// ========================================
-// PLAYERS + 🔥 TIME-BASED SCORE
-$stmt = $pdo->prepare("
-    SELECT 
-        gp.id,
-        gp.name,
-        COALESCE(SUM(
-            CASE 
-                WHEN ga.is_correct = 1 AND ga.started_at IS NOT NULL THEN 
-                    1000 - LEAST(
-                        TIMESTAMPDIFF(SECOND, ga.started_at, ga.answered_at) * 100,
-                        800
-                    )
-                ELSE 0
-            END
-        ), 0) AS score
-    FROM game_players gp
-    LEFT JOIN game_answers ga 
-        ON gp.id = ga.player_id 
-        AND gp.game_id = ga.game_id
-    WHERE gp.game_id = ?
-    GROUP BY gp.id, gp.name
-    ORDER BY score DESC
-");
-$stmt->execute([$pin]);
-$players = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// ========================================
-// DEFAULTS
-$question = null;
-$answeredCount = 0;
-
-// ========================================
-// QUESTION + ANSWER COUNT
-if ($game["state"] === "playing") {
-
-    $index = intval($game["current_question_index"]);
-    if ($index < 0) $index = 0;
-
-    // aktuális kérdés
+try {
     $stmt = $pdo->prepare("
-        SELECT id, question_text, type
-        FROM question
-        WHERE quiz_id = ?
-        ORDER BY order_index ASC
-        LIMIT $index, 1
+        select *
+        from game_sessions
+        where id = ?
+        limit 1
     ");
-    $stmt->execute([$game["quiz_id"]]);
-    $q = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt->execute([$pin]);
+    $game = $stmt->fetch();
 
-    if ($q) {
-
-        // válaszok
-        $stmt = $pdo->prepare("
-            SELECT id, label
-            FROM answer_option
-            WHERE question_id = ?
-            ORDER BY order_index ASC
-        ");
-        $stmt->execute([$q["id"]]);
-        $answersRaw = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $answers = array_map(function ($a) {
-            return [
-                "id" => $a["id"],
-                "text" => $a["label"]
-            ];
-        }, $answersRaw);
-
-        $question = [
-            "id" => $q["id"],
-            "text" => $q["question_text"],
-            "type" => $q["type"],
-            "answers" => $answers
-        ];
-
-        // ========================================
-        // ANSWER COUNT
-        $stmt = $pdo->prepare("
-            SELECT COUNT(DISTINCT player_id)
-            FROM game_answers
-            WHERE game_id = ?
-            AND question_id = ?
-        ");
-        $stmt->execute([$pin, $q["id"]]);
-        $answeredCount = (int)$stmt->fetchColumn();
+    if (!$game) {
+        json_error("Game not found", 404);
     }
+
+    $stmt = $pdo->prepare("
+        select 
+            gp.id,
+            gp.name,
+            coalesce(sum(
+                case 
+                    when ga.is_correct = 1 and ga.started_at is not null then 
+                        1000 - least(
+                            timestampdiff(second, ga.started_at, ga.answered_at) * 100,
+                            800
+                        )
+                    else 0
+                end
+            ), 0) as score
+        from game_players gp
+        left join game_answers ga
+            on gp.id = ga.player_id
+            and gp.game_id = ga.game_id
+        where gp.game_id = ?
+        group by gp.id, gp.name
+        order by score desc
+    ");
+    $stmt->execute([$pin]);
+    $players = $stmt->fetchAll();
+
+    $question = null;
+    $answeredCount = 0;
+
+    if ((string)$game["state"] === "playing") {
+        $index = max(0, (int)$game["current_question_index"]);
+
+        $stmt = $pdo->prepare("
+            select id, question_text, type
+            from question
+            where quiz_id = ?
+            order by order_index asc
+            limit 1 offset $index
+        ");
+        $stmt->execute([$game["quiz_id"]]);
+        $currentQuestion = $stmt->fetch();
+
+        if ($currentQuestion) {
+            $stmt = $pdo->prepare("
+                select id, label
+                from answer_option
+                where question_id = ?
+                order by order_index asc
+            ");
+            $stmt->execute([$currentQuestion["id"]]);
+            $answerRows = $stmt->fetchAll();
+
+            $answers = array_map(function ($answer) {
+                return [
+                    "id" => $answer["id"],
+                    "text" => $answer["label"],
+                ];
+            }, $answerRows);
+
+            $question = [
+                "id" => $currentQuestion["id"],
+                "text" => $currentQuestion["question_text"],
+                "type" => $currentQuestion["type"],
+                "answers" => $answers,
+            ];
+
+            $stmt = $pdo->prepare("
+                select count(distinct player_id)
+                from game_answers
+                where game_id = ?
+                and question_id = ?
+            ");
+            $stmt->execute([
+                $pin,
+                $currentQuestion["id"]
+            ]);
+
+            $answeredCount = (int)$stmt->fetchColumn();
+        }
+    }
+
+    json_success([
+        "game" => [
+            "state" => $game["state"],
+            "current_question_index" => (int)$game["current_question_index"],
+        ],
+        "players" => $players,
+        "question" => $question,
+        "answers_count" => $answeredCount,
+    ]);
+
+} catch (Throwable $e) {
+    app_log_exception("GET GAME STATE ERROR", $e);
+    json_error("Nem sikerült betölteni a játék állapotát.", 500);
 }
-
-// ========================================
-header("Content-Type: application/json");
-
-echo json_encode([
-    "game" => [
-        "state" => $game["state"],
-        "current_question_index" => (int)$game["current_question_index"]
-    ],
-    "players" => $players,
-    "question" => $question,
-    "answers_count" => $answeredCount
-]);

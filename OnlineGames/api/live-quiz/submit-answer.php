@@ -2,89 +2,89 @@
 require __DIR__ . "/../bootstrap.php";
 require __DIR__ . "/../db.php";
 
-// ========================================
-// INPUT
-$raw = file_get_contents("php://input");
-$data = json_decode($raw, true);
+$data = read_json_body();
 
-if (
-    !is_array($data) ||
-    empty($data["player_id"]) ||
-    empty($data["answer_id"]) ||
-    empty($data["pin"])
-) {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing data"]);
-    exit;
+$playerId = (int)($data["player_id"] ?? 0);
+$answerId = trim((string)($data["answer_id"] ?? ""));
+$pin = trim((string)($data["pin"] ?? ""));
+
+if ($playerId <= 0 || $answerId === "" || $pin === "") {
+    json_error("Missing data", 400);
 }
 
-$playerId = (int)$data["player_id"];
-$answerId = $data["answer_id"];
-$pin = (string)$data["pin"];
+try {
+    $stmt = $pdo->prepare("
+        select question_id, is_correct
+        from answer_option
+        where id = ?
+        limit 1
+    ");
+    $stmt->execute([$answerId]);
+    $answer = $stmt->fetch();
 
-// ========================================
-// ANSWER → QUESTION + CORRECTNESS
-$stmt = $pdo->prepare("
-    SELECT question_id, is_correct 
-    FROM answer_option 
-    WHERE id = ?
-");
-$stmt->execute([$answerId]);
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$answer) {
+        json_error("Answer not found", 404);
+    }
 
-if (!$row) {
-    http_response_code(404);
-    echo json_encode(["error" => "Answer not found"]);
-    exit;
-}
+    $questionId = (string)$answer["question_id"];
+    $isCorrect = (int)$answer["is_correct"];
 
-$questionId = $row["question_id"];
-$isCorrect = (int)$row["is_correct"];
-
-// ========================================
-// DUPLICATE CHECK
-$stmt = $pdo->prepare("
-    SELECT id FROM game_answers
-    WHERE game_id = ? AND player_id = ? AND question_id = ?
-");
-$stmt->execute([$pin, $playerId, $questionId]);
-
-if ($stmt->fetch()) {
-    echo json_encode([
-        "ok" => true,
-        "duplicate" => true
+    $stmt = $pdo->prepare("
+        select id
+        from game_answers
+        where game_id = ?
+        and player_id = ?
+        and question_id = ?
+        limit 1
+    ");
+    $stmt->execute([
+        $pin,
+        $playerId,
+        $questionId
     ]);
-    exit;
+
+    if ($stmt->fetch()) {
+        json_success([
+            "duplicate" => true
+        ]);
+    }
+
+    $stmt = $pdo->prepare("
+        select question_started_at
+        from game_sessions
+        where id = ?
+        limit 1
+    ");
+    $stmt->execute([$pin]);
+    $game = $stmt->fetch();
+
+    if (!$game) {
+        json_error("Game not found", 404);
+    }
+
+    $startedAt = $game["question_started_at"] ?? null;
+
+    $stmt = $pdo->prepare("
+        insert into game_answers
+            (game_id, player_id, question_id, answer_id, is_correct, started_at, answered_at)
+        values
+            (?, ?, ?, ?, ?, ?, now())
+    ");
+    $stmt->execute([
+        $pin,
+        $playerId,
+        $questionId,
+        $answerId,
+        $isCorrect,
+        $startedAt
+    ]);
+
+    json_success([
+        "duplicate" => false,
+        "correct" => (bool)$isCorrect
+    ]);
+
+} catch (Throwable $e) {
+    app_log_exception("SUBMIT ANSWER ERROR", $e);
+    json_error("Nem sikerült menteni a választ.", 500);
 }
-
-// ========================================
-// 🔥 GET QUESTION START TIME
-$stmt = $pdo->prepare("
-    SELECT question_started_at 
-    FROM game_sessions 
-    WHERE id = ?
-");
-$stmt->execute([$pin]);
-$game = $stmt->fetch(PDO::FETCH_ASSOC);
-
-$startedAt = $game["question_started_at"] ?? null;
-
-// ========================================
-// SAVE
-$pdo->prepare("
-    INSERT INTO game_answers 
-    (game_id, player_id, question_id, answer_id, is_correct, started_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-")->execute([
-    $pin,
-    $playerId,
-    $questionId,
-    $answerId,
-    $isCorrect,
-    $startedAt
-]);
-
-echo json_encode([
-    "ok" => true,
-    "correct" => (bool)$isCorrect
-]);

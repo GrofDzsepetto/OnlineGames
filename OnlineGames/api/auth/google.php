@@ -2,81 +2,73 @@
 require __DIR__ . "/../bootstrap.php";
 require __DIR__ . "/../db.php";
 
-// ========================================
-// Request body
-// ========================================
+$data = read_json_body();
 
-$data = json_decode(file_get_contents("php://input"), true);
+$token = trim((string)($data["token"] ?? ""));
 
-if (!isset($data['token'])) {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing token"]);
-    exit;
+if ($token === "") {
+    json_error("Missing token", 400);
 }
 
-$token = $data['token'];
+try {
+    $ch = curl_init();
 
-// ========================================
-// Google token ellenőrzés
-// ========================================
+    curl_setopt_array($ch, [
+        CURLOPT_URL => "https://oauth2.googleapis.com/tokeninfo?id_token=" . urlencode($token),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+    ]);
 
-$ch = curl_init();
-curl_setopt_array($ch, [
-    CURLOPT_URL => "https://oauth2.googleapis.com/tokeninfo?id_token=" . urlencode($token),
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT => 5,
-]);
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
 
-if ($response === false || $httpCode !== 200) {
-    http_response_code(401);
-    echo json_encode(["error" => "Google verification failed"]);
-    exit;
+    curl_close($ch);
+
+    if ($response === false || $httpCode !== 200) {
+        app_log("GOOGLE VERIFY ERROR: " . $curlError);
+        json_error("Google verification failed", 401);
+    }
+
+    $payload = json_decode($response, true);
+
+    if (!is_array($payload) || empty($payload["email"])) {
+        json_error("Invalid Google token", 401);
+    }
+
+    $email = strtolower(trim((string)$payload["email"]));
+    $name = isset($payload["name"]) ? trim((string)$payload["name"]) : null;
+
+    $stmt = $pdo->prepare("
+        select id
+        from users
+        where email = ?
+        limit 1
+    ");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        $stmt = $pdo->prepare("
+            insert into users (email, name)
+            values (?, ?)
+        ");
+        $stmt->execute([$email, $name]);
+
+        $userId = (int)$pdo->lastInsertId();
+    } else {
+        $userId = (int)$user["id"];
+    }
+
+    $_SESSION["user_id"] = $userId;
+
+    app_log("GOOGLE LOGIN SESSION ID: " . session_id());
+
+    json_success([
+        "user_id" => $userId
+    ]);
+
+} catch (Throwable $e) {
+    app_log_exception("GOOGLE LOGIN ERROR", $e);
+    json_error("Nem sikerült bejelentkezni Google-fiókkal.", 500);
 }
-
-$payload = json_decode($response, true);
-
-if (!isset($payload['email'])) {
-    http_response_code(401);
-    echo json_encode(["error" => "Invalid Google token"]);
-    exit;
-}
-
-$email = $payload['email'];
-$name  = isset($payload['name']) ? $payload['name'] : null;
-
-// ========================================
-// User keresés / létrehozás
-// ========================================
-
-$stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-$stmt->execute([$email]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$user) {
-    $stmt = $pdo->prepare(
-        "INSERT INTO users (email, name) VALUES (?, ?)"
-    );
-    $stmt->execute([$email, $name]);
-    $userId = (int)$pdo->lastInsertId();
-} else {
-    $userId = (int)$user['id'];
-}
-
-// ========================================
-// SESSION
-// ========================================
-
-$_SESSION['user_id'] = $userId;
-
-// DEBUG LOG
-error_log("GOOGLE LOGIN SESSION ID: " . session_id());
-error_log("GOOGLE LOGIN SESSION DATA: " . print_r($_SESSION, true));
-
-echo json_encode([
-    "ok" => true,
-    "user_id" => $userId,
-]);
-exit;
