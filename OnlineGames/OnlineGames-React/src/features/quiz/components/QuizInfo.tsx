@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getQuizMeta, getQuizResults } from "../../services/quizService";
-import { useAuth } from "../../auth/AuthContext";
+import { getQuizMeta, getQuizResults } from "../services/quizService";
+import { useAuth } from "../../../auth/AuthContext";
 import QuizCountdownModal from "./QuizCountdownModal";
-import type { QuizMeta, QuizResultRow } from "../../types/quiz";
+import type { QuizMeta, QuizResultRow } from "../types/quiz";
 
 
 const QuizInfo = () => {

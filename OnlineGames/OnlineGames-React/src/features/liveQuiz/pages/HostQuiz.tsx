@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getQuizMeta } from "../../services/quizService";
-import { API_BASE } from "../../config/api";
-import type { QuizMeta } from "../../types/quiz";
-import "../../styles/Live-Quiz/hostQuiz.css";
+import { getQuizMeta } from "../../quiz/services/quizService";
+import { API_BASE } from "../../../config/api";
+import type { QuizMeta } from "../../../features/quiz/types/quiz";
+import "../styles/hostQuiz.css";
 
 type Player = {
   id: number;

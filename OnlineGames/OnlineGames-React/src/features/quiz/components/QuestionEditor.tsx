@@ -1,5 +1,5 @@
-import type { MatchingPair, QuizQuestion } from "../../types/quiz";
-import "../../styles/Quiz/components/questionEditor.css";
+import type { MatchingPair, QuizQuestion } from "../types/quiz";
+import "../styles/questionEditor.css";
 
 
 type QuestionType = "MULTIPLE_CHOICE" | "MATCHING";

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getQuizQuestions } from "../../services/quizService";
-import type { QuizQuestion } from "../../types/quiz";
-import QuizQuestionComponent from "../../components/quiz/QuizQuestion";
-import QuizMatchingQuestion from "../../components/quiz/QuizMatchingQuestion";
-import QuizResult from "../../components/quiz/QuizResult";
+import { getQuizQuestions } from "../services/quizService";
+import type { QuizQuestion } from "../types/quiz";
+import QuizQuestionComponent from "../components/QuizQuestion";
+import QuizMatchingQuestion from "../components/QuizMatchingQuestion";
+import QuizResult from "../components/QuizResult";
 
 const QuizPlay = () => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);

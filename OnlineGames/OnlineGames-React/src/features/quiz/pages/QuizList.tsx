@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getQuizzes, deleteQuiz } from "../../services/quizService";
-import type { Quiz } from "../../types/quiz";
-import QuizCard from "../../components/quiz/QuizCard";
-import { useAuth } from "../../auth/AuthContext";
+import { getQuizzes, deleteQuiz } from "../services/quizService";
+import QuizCard from "../components/QuizCard";
+import { useAuth } from "../../../auth/AuthContext";
 import { useTranslation } from "react-i18next";
-import "../../styles/Quiz/QuizList.css";
+import "../styles/QuizList.css";
+
+import type { Quiz } from "../types/quiz";
+
 
 const QuizList = () => {
   const navigate = useNavigate();

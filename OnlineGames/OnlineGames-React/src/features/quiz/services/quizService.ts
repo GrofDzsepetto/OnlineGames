@@ -1,4 +1,4 @@
-import { API_BASE } from "../config/api";
+import { API_BASE } from "../../../config/api";
 import type { Quiz, QuizQuestion, MatchingPair } from "../types/quiz";
 import type { ApiQuizResponse, ApiQuestion } from "./quizApi.types";
 

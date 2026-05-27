@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import "../../../styles/Live-Quiz/questionView.css";
+import "../styles/questionView.css";
 
 const colors = ["#e21b3c", "#1368ce", "#d89e00", "#26890c"];
 

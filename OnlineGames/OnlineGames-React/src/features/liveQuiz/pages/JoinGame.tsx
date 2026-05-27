@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE } from "../../config/api";
-import "../../styles/Live-Quiz/joinGame.css"
+import { API_BASE } from "../../../config/api";
+import "../styles/joinGame.css"
 
 export default function JoinGame() {
   const [pin, setPin] = useState("");

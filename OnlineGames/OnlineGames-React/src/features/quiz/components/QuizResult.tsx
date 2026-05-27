@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { saveQuizResult } from "../../services/quizService";
-import { useAuth } from "../../auth/AuthContext";
+import { saveQuizResult } from "../services/quizService";
+import { useAuth } from "../../../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
-import "../../styles/Quiz/quizResult.css";
+import "../styles/quizResult.css";
 
 interface Props {
   score: number;

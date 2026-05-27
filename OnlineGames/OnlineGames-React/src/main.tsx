@@ -11,9 +11,10 @@ import "./styles/globals.css";
 import "./styles/layout.css";
 import "./styles/buttons.css";
 import "./styles/cards.css";
-import "./styles/Quiz/quiz.css"
-import "./styles/Quiz/createQuiz.css"
-import "./styles/Quiz/quizList.css"
+
+import "./features/quiz/styles/quiz.css"
+import "./features/quiz/styles/createQuiz.css"
+import "./features/quiz/styles/quizList.css"
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
 if (!CLIENT_ID) {

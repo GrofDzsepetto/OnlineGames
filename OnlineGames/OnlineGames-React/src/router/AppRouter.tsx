@@ -1,17 +1,17 @@
 import { createBrowserRouter } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import Home from "../pages/Home";
-import QuizList from "../pages/Quiz/QuizList";
-import QuizPlay from "../pages/Quiz/QuizPlay";
+import QuizList from "../features/quiz/pages/QuizList";
+import QuizPlay from "../features/quiz/pages/QuizPlay";
 import NotFound from "../pages/NotFound";
 import Login from "../pages/Login";
-import CreateQuiz from "../pages/Quiz/CreateQuiz";
-import EditQuiz from "../pages/Quiz/EditQuiz";
+import CreateQuiz from "../features/quiz/pages/CreateQuiz";
+import EditQuiz from "../features/quiz/pages/EditQuiz";
 import Help from "../pages/Help";
-import QuizInfo from "../components/quiz/QuizInfo";
-import HostQuiz from "../pages/Live-Quiz/HostQuiz";
-import JoinGame from "../pages/Live-Quiz/JoinGame";
-import PlayerGame from "../pages/Live-Quiz/PlayerGame";
+import QuizInfo from "../features/quiz/components/QuizInfo";
+import HostQuiz from "../features/liveQuiz/pages/HostQuiz";
+import JoinGame from "../features/liveQuiz/pages/JoinGame";
+import PlayerGame from "../features/liveQuiz/pages/PlayerGame";
 
 export const router = createBrowserRouter([
   {

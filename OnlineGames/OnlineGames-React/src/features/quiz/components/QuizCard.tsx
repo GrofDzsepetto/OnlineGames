@@ -1,4 +1,4 @@
-import type { Quiz } from "../../types/quiz";
+import type { Quiz } from "../types/quiz";
 import { useNavigate } from "react-router-dom";
 
 const QuizCard = ({ quiz }: { quiz: Quiz }) => {

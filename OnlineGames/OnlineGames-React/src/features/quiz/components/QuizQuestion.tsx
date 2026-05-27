@@ -1,4 +1,5 @@
-import type { QuizQuestion } from "../../types/quiz";
+import type { QuizQuestion } from "../types/quiz";
+
 const QuizQuestionComponent = ({
   question,
   onAnswer,

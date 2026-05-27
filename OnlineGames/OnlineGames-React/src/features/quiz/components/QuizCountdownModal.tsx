@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import "../../styles/Quiz/components/QuizCountdownModal.css";
+import "../styles/QuizCountdownModal.css";
 
 type QuizCountdownModalProps = {
   seconds?: number;

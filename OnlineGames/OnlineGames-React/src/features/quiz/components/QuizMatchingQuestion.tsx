@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { QuizQuestion } from "../../types/quiz";
+import type { QuizQuestion } from "../types/quiz";
 
 type Card = {
   id: string;

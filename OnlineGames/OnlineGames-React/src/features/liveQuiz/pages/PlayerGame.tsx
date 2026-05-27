@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { API_BASE } from "../../config/api";
-import LobbyView from "./Components/LobbyView";
-import QuestionView from "./Components/QuestionView";
-import ResultView from "./Components/ResultView";
-import "../../styles/Live-Quiz/playerGame.css";
+import { API_BASE } from "../../../config/api";
+import LobbyView from "../components/LobbyView";
+import QuestionView from "../components/QuestionView";
+import ResultView from "../components/ResultView";
+import "../styles/playerGame.css";
 
 type Player = {
   id: number;

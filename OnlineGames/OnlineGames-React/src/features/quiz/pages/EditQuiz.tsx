@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { MatchingPair } from "../../types/quiz";
-import { getQuizForEdit, updateQuiz } from "../../services/quizService";
-import QuestionEditor from "../../components/quiz/QuestionEditor";
-import type { EditableQuestion } from "../../components/quiz/QuestionEditor";
-import QuizMetaForm from "../../components/quiz/QuizMetaForm";
+import { getQuizForEdit, updateQuiz } from "../services/quizService";
+import QuestionEditor from "../components/QuestionEditor";
+import QuizMetaForm from "../components/QuizMetaForm";
+
+import type { EditableQuestion } from "../components/QuestionEditor";
+import type { MatchingPair } from "../types/quiz";
 
 type LanguageCode = "hu" | "en";
 
