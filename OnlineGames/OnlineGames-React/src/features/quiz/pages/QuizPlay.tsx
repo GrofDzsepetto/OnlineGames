@@ -5,6 +5,7 @@ import type { QuizQuestion } from "../types/quiz";
 import QuizQuestionComponent from "../components/QuizQuestion";
 import QuizMatchingQuestion from "../components/QuizMatchingQuestion";
 import QuizResult from "../components/QuizResult";
+import "../styles/quizPlay.css"
 
 const QuizPlay = () => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);

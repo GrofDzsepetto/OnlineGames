@@ -1,61 +1,88 @@
 .login-page {
-  min-height: 100vh;
+  width: 100%;
   display: flex;
-  justify-content: center;   /* vízszintesen középen */
-  align-items: flex-start;   /* felül kezdődjön */
-  padding: 6rem 1rem 2rem 1rem;
+  justify-content: center;
+  align-items: center;
+  
+  min-height: calc(100vh - 120px - 4rem); 
+  box-sizing: border-box;
 }
 
 .login-container {
   width: 100%;
-  max-width: 420px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 2rem;
+  width: 100%;
+  margin-bottom: 2.5rem;
 }
 
 .login-title {
-  font-size: 1.8rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 0.5rem;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.25rem; 
 }
 
 .login-subtitle {
-  font-size: 0.9rem;
+  font-size: 0.925rem;
   color: #94a3b8;
+  line-height: 1.5;
 }
 
 .login-button-wrapper {
+  width: 100%;
   display: flex;
   justify-content: center;
+  transition: transform 0.2s ease;
 }
 
-.login-button-scale {
-  transform: scale(1.1);
+.login-button-wrapper:hover {
+  transform: translateY(-2px);
 }
 
 .login-terms {
   margin-top: 2rem;
   text-align: center;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #64748b;
+  line-height: 1.6;
 }
 
 .login-footer {
-  margin-top: 1.5rem;
   text-align: center;
-  font-size: 0.85rem;
-  color: #94a3b8;
+  font-size: 0.8rem;
+  color: #475569;
+  letter-spacing: 0.025em;
+}
+
+/* --- RESPONSIVE BREAKPOINTS --- */
+
+@media (max-width: 380px) {
+  .login-card {
+    padding: 2rem 1.25rem;
+  }
+  
+  .login-title {
+    font-size: 1.5rem;
+  }
 }

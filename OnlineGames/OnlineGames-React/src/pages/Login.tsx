@@ -14,9 +14,9 @@ export default function Login() {
   return (
     <div className="login-page">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
         className="login-container"
       >
         <div className="login-card">
@@ -26,53 +26,52 @@ export default function Login() {
           </div>
 
           <div className="login-button-wrapper">
-            <div className="login-button-scale">
-              <GoogleLogin
-                theme="filled_black"
-                shape="pill"
-                size="large"
-                onSuccess={async (cred) => {
-                  try {
-                    if (!cred.credential) {
-                      console.error("Missing Google credential");
-                      return;
-                    }
-
-                    const res = await fetch(`${API_BASE}/auth/google.php`, {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      credentials: "include",
-                      body: JSON.stringify({
-                        token: cred.credential,
-                      }),
-                    });
-
-                    const data = await res.json();
-
-                    if (!res.ok || !data?.success) {
-                      console.error("Google login failed:", data);
-                      return;
-                    }
-
-                    const loggedInUser = await refreshUser();
-
-                    if (!loggedInUser) {
-                      console.error("Login sikeres volt, de a user.php nem adott vissza usert.");
-                      return;
-                    }
-
-                    navigate("/");
-                  } catch (error) {
-                    console.error("Google login error:", error);
+            <GoogleLogin
+              theme="filled_black"
+              shape="pill"
+              size="large"
+              width="100%" /* Reszponzív szélesség az iframe-nek */
+              onSuccess={async (cred) => {
+                try {
+                  if (!cred.credential) {
+                    console.error("Missing Google credential");
+                    return;
                   }
-                }}
-                onError={() => {
-                  console.error("Google login failed");
-                }}
-              />
-            </div>
+
+                  const res = await fetch(`${API_BASE}/auth/google.php`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                      token: cred.credential,
+                    }),
+                  });
+
+                  const data = await res.json();
+
+                  if (!res.ok || !data?.success) {
+                    console.error("Google login failed:", data);
+                    return;
+                  }
+
+                  const loggedInUser = await refreshUser();
+
+                  if (!loggedInUser) {
+                    console.error("Login sikeres volt, de a user.php nem adott vissza usert.");
+                    return;
+                  }
+
+                  navigate("/");
+                } catch (error) {
+                  console.error("Google login error:", error);
+                }
+              }}
+              onError={() => {
+                console.error("Google login failed");
+              }}
+            />
           </div>
 
           <div className="login-terms">{t("login.terms")}</div>
